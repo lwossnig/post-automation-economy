@@ -21,6 +21,9 @@ CONFIGS = [
          usage_levy=0.10, skill_dispersion=0.4, ubi=0.3),   # Exp Q: stacked rents + levers
     dict(two_channel=True, mu_frac=0.25, labour_supply_elast_r=0.3,
          reservation_wage=0.5, skill_dispersion=0.4, ubi=0.3),   # Exp R: elastic labour
+    dict(two_channel=True, mu_frac=0.25, endogenous_automation=True,
+         auto_cost0_ai=8.0, auto_cost0_r=8.0, cost_decline_ai=0.008,
+         cost_decline_r=0.008, skill_dispersion=0.4, ubi=0.3),   # Exp S: endogenous automation
 ]
 
 
@@ -839,3 +842,34 @@ def test_elastic_supply_dampens_the_bottleneck_wage():
     assert elas._sf_r > 1.0                           # labour did expand
     assert abs(elas.deposits_sum()) < 1e-3
     assert abs(elas.total_nw() - elas.real_assets()) < 1e-3
+
+
+# ---- Experiment S: endogenous, cost-driven automation ----
+
+def test_endogenous_automation_is_inert_when_cost_is_negligible():
+    """With the flag off the ramp is exogenous; with the flag on but machine cost far
+    below the wage the gate is fully open, so the realised ramp matches the frontier."""
+    T = 300
+    exo = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); exo.run()
+    cheap = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0,
+                             endogenous_automation=True, auto_cost0_ai=1e-3, auto_cost0_r=1e-3,
+                             cost_decline_ai=0.0, cost_decline_r=0.0)); cheap.run()
+    assert np.allclose(np.array(exo.hist.a_ai), np.array(cheap.hist.a_ai), atol=1e-3)
+
+
+def test_cost_decline_speed_sets_the_pace_and_transition_still_arrives():
+    """Slower cost decline => later, lower realised automation than faster decline and
+    than the exogenous frontier; but the transition still arrives by the end."""
+    T = 600
+    exo = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); exo.run()
+    slow = ModelV3(_replace(_sv3.endog_auto_slow(), n_agents=300, periods=T, seed=0)); slow.run()
+    mit = ModelV3(_replace(_sv3.endog_auto_mit(), n_agents=300, periods=T, seed=0)); mit.run()
+    fast = ModelV3(_replace(_sv3.endog_auto_fast(), n_agents=300, periods=T, seed=0)); fast.run()
+    a_slow, a_mit, a_fast = (np.array(m.hist.a_ai) for m in (slow, mit, fast))
+    # at mid-transition the realised share is ordered by cost-decline speed
+    assert a_slow[250] < a_mit[250] < a_fast[250]
+    assert a_slow[250] < np.array(exo.hist.a_ai)[250]      # endogenous lags the frontier
+    # but it is "how fast", not "whether": slow automation still arrives by the end
+    assert a_slow[-1] > 0.9
+    assert abs(slow.deposits_sum()) < 1e-3
+    assert abs(slow.total_nw() - slow.real_assets()) < 1e-3

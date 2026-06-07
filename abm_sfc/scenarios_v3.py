@@ -313,3 +313,45 @@ REGISTRY.update({
     "labour_elastic_routine": labour_elastic_routine,
     "labour_elastic_strong": labour_elastic_strong,
 })
+
+
+# --- Experiment S: endogenous, cost-driven automation ------------------------
+# The logistic ramp is the technical frontier; here a task is automated only when
+# the machine is cheaper than the human wage for it. Machine cost starts well above
+# the early wage (auto_cost0 = 8x) and declines at cost_decline per period, so the
+# realised automation lags the frontier and its pace is set by how fast cost falls.
+# Slow decline => a late, long-partial transition; faster decline => closer to the
+# exogenous ramp; AI-as-a-service scale economies pull it forward. The transition
+# still arrives (the wage feedback opens the gate as bottleneck wages rise), so the
+# result is "how fast and how far," not "whether."
+def endog_auto_slow():
+    """Slow cost decline: automation is delayed and partial for a long time."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=8.0, auto_cost0_ai=8.0, cost_decline_r=0.004, cost_decline_ai=0.004)
+
+
+def endog_auto_mit():
+    """MIT-baseline pace: a gradual, cost-paced transition."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=8.0, auto_cost0_ai=8.0, cost_decline_r=0.008, cost_decline_ai=0.008)
+
+
+def endog_auto_fast():
+    """Fast cost decline: automation arrives close to the exogenous frontier timing."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=4.0, auto_cost0_ai=4.0, cost_decline_r=0.012, cost_decline_ai=0.012)
+
+
+def endog_auto_scale():
+    """MIT pace plus AI-as-a-service scale economies (cost falls with the AI stock)."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=8.0, auto_cost0_ai=8.0, cost_decline_r=0.008, cost_decline_ai=0.008,
+                   service_scale=0.5)
+
+
+REGISTRY.update({
+    "endog_auto_slow": endog_auto_slow,
+    "endog_auto_mit": endog_auto_mit,
+    "endog_auto_fast": endog_auto_fast,
+    "endog_auto_scale": endog_auto_scale,
+})

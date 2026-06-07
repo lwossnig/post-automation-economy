@@ -184,6 +184,23 @@ class ParamsV3:
     a_ai_max: float = 0.49         # AI ramp addition (-> 0.99, larger reach)
     a_ai_start: int = 110          # AI ramps later...
     a_ai_speed: float = 0.10       # ...and faster
+    # ---- Experiment S: endogenous, cost-driven automation ----
+    # The logistic ramps above are the TECHNICAL frontier (what can be automated).
+    # With endogenous_automation on, a task is only actually automated when doing it
+    # by machine is cheaper than the human wage for it (MIT "Beyond AI Exposure"): the
+    # realised capital-task share is the logistic increment times a cost gate, a
+    # sigmoid in log(wage / machine-cost). Machine cost starts at auto_cost0_x times
+    # the early per-unit wage and falls at cost_decline_x per period; as it drops below
+    # the wage the gate opens, and rising wages (a bottleneck) open it further (the
+    # feedback). service_scale lets AI cost fall faster as the AI stock grows (scale
+    # economies). Off by default, so every existing experiment is unchanged.
+    endogenous_automation: bool = False
+    auto_cost0_r: float = 3.0      # initial robot cost as a multiple of the early routine wage
+    auto_cost0_ai: float = 3.0     # initial AI cost as a multiple of the early cognitive wage
+    cost_decline_r: float = 0.0    # per-period decline in robot cost
+    cost_decline_ai: float = 0.0   # per-period decline in AI/compute cost
+    automation_cost_elast: float = 8.0   # sharpness of the cost gate (sigmoid in log wage/cost)
+    service_scale: float = 0.0     # AI cost falls with the AI stock (AI-as-a-service economies)
     # ---- Phase 2: reinstatement margin (Acemoglu-Restrepo new tasks) ----
     # Automation raises the capital-task share, but new labour-intensive tasks are
     # created in its wake and pull that share back down. reinstate_frac (rho) is the
@@ -377,6 +394,8 @@ class HistoryV3:
     compute_rev: list = field(default_factory=list)        # govt take from tariff + usage levy (Exp Q)
     a_r: list = field(default_factory=list)                # robotic task share
     a_ai: list = field(default_factory=list)               # AI task share
+    cost_robot: list = field(default_factory=list)         # machine cost per routine task (Exp S)
+    cost_ai: list = field(default_factory=list)            # machine cost per cognitive task (Exp S)
     w_Lr: list = field(default_factory=list)               # routine wage bill
     w_Lc: list = field(default_factory=list)               # cognitive wage bill
     wage_unit_r: list = field(default_factory=list)        # routine per-unit (take-home) wage (Exp R)
@@ -410,6 +429,13 @@ class ModelV3:
         self._w_ref_r = None
         self._w_ref_c = None
         self._sf_r = self._sf_c = 1.0
+        # Experiment S: lagged per-unit wages (for the cost comparison) and the
+        # reference wage / AI-stock anchors for the machine-cost path. Set lazily.
+        self._wu_r_prev = None
+        self._wu_c_prev = None
+        self._cost_ref_r = None
+        self._cost_ref_c = None
+        self._kai_ref = None
 
         # --- labour endowment: per-agent skill (efficiency units) and employment ---
         if p.skill_dispersion > 0:
@@ -490,15 +516,41 @@ class ModelV3:
         z = speed * (self.t - start)
         return min(max(base + mx / (1.0 + np.exp(-z)), base), 0.999)
 
+    def _cost_gate(self, wage_prev, cost_ref, cost0, decline, scale_factor):
+        """Experiment S: the fraction of the technical frontier that is cost-effective.
+
+        Machine cost is cost0 * (early per-unit wage) * (1 - decline)**t, optionally
+        scaled down by scale_factor. The gate is a sigmoid in log(wage / cost): >0.5
+        once the wage exceeds the machine cost. Returns 1.0 (the plain logistic) until
+        a reference wage has been observed, so period 0 is unaffected.
+        """
+        p = self.p
+        if wage_prev is None or cost_ref is None:
+            return 1.0
+        cost = cost0 * cost_ref * (1.0 - decline) ** self.t * scale_factor
+        z = p.automation_cost_elast * np.log(max(wage_prev, 1e-9) / max(cost, 1e-12))
+        return float(1.0 / (1.0 + np.exp(-np.clip(z, -50.0, 50.0))))
+
     def a_r_t(self) -> float:
         """Robotic capital-task share inside the routine cluster."""
         p = self.p
-        return self._logistic_ramp(p.a_r_base, p.a_r_max, p.a_r_start, p.a_r_speed)
+        ramp = self._logistic_ramp(p.a_r_base, p.a_r_max, p.a_r_start, p.a_r_speed)
+        if not p.endogenous_automation:
+            return ramp
+        gate = self._cost_gate(self._wu_r_prev, self._cost_ref_r, p.auto_cost0_r, p.cost_decline_r, 1.0)
+        return min(max(p.a_r_base + (ramp - p.a_r_base) * gate, p.a_r_base), 0.999)
 
     def a_ai_t(self) -> float:
         """AI capital-task share inside the cognitive cluster."""
         p = self.p
-        return self._logistic_ramp(p.a_ai_base, p.a_ai_max, p.a_ai_start, p.a_ai_speed)
+        ramp = self._logistic_ramp(p.a_ai_base, p.a_ai_max, p.a_ai_start, p.a_ai_speed)
+        if not p.endogenous_automation:
+            return ramp
+        scale = 1.0
+        if p.service_scale > 0.0 and self._kai_ref:
+            scale = (self._kai_ref / max(self.K_ai, 1e-9)) ** p.service_scale
+        gate = self._cost_gate(self._wu_c_prev, self._cost_ref_c, p.auto_cost0_ai, p.cost_decline_ai, scale)
+        return min(max(p.a_ai_base + (ramp - p.a_ai_base) * gate, p.a_ai_base), 0.999)
 
     def _reinstate_share(self) -> float:
         """Phase 2: the fraction of competitive capital income reinstated to labour
@@ -1352,10 +1404,25 @@ class ModelV3:
             self.hist.compute_rev.append(float(self._compute_rev))
             self.hist.a_r.append(float(a_r))
             self.hist.a_ai.append(float(a_ai))
+            if p.endogenous_automation and self._cost_ref_r is not None:
+                self.hist.cost_robot.append(float(p.auto_cost0_r * self._cost_ref_r
+                                                  * (1.0 - p.cost_decline_r) ** self.t))
+                self.hist.cost_ai.append(float(p.auto_cost0_ai * self._cost_ref_c
+                                               * (1.0 - p.cost_decline_ai) ** self.t))
+            else:
+                self.hist.cost_robot.append(0.0)
+                self.hist.cost_ai.append(0.0)
             self.hist.w_Lr.append(float(w_Lr))
             self.hist.w_Lc.append(float(w_Lc))
-            self.hist.wage_unit_r.append(float(w_Lr / max(L_r, 1e-9)))
-            self.hist.wage_unit_c.append(float(w_Lc / max(L_c, 1e-9)))
+            _wu_r = float(w_Lr / max(L_r, 1e-9))
+            _wu_c = float(w_Lc / max(L_c, 1e-9))
+            self.hist.wage_unit_r.append(_wu_r)
+            self.hist.wage_unit_c.append(_wu_c)
+            # Experiment S: carry this period's per-unit wages to the next step's cost
+            # comparison, and anchor the machine-cost path to the first wage observed.
+            if self._cost_ref_r is None:
+                self._cost_ref_r, self._cost_ref_c, self._kai_ref = _wu_r, _wu_c, float(self.K_ai)
+            self._wu_r_prev, self._wu_c_prev = _wu_r, _wu_c
             self.hist.labour_supply_r.append(float(L_r))
             self.hist.labour_supply_c.append(float(L_c))
             emp_mask = self.emp_status > 0.0
