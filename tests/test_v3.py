@@ -17,6 +17,10 @@ CONFIGS = [
     dict(own_households=0.4, own_state=0.6, citizens_fund=True),
     dict(wealth_brackets=((2.0, 0.01), (10.0, 0.03)), ubi=0.3),
     dict(skill_dispersion=0.6, displacement=True, ubi=0.3),
+    dict(two_channel=True, mu_frac=0.25, mu_compute=0.15, tariff_compute=0.30,
+         usage_levy=0.10, skill_dispersion=0.4, ubi=0.3),   # Exp Q: stacked rents + levers
+    dict(two_channel=True, mu_frac=0.25, labour_supply_elast_r=0.3,
+         reservation_wage=0.5, skill_dispersion=0.4, ubi=0.3),   # Exp R: elastic labour
 ]
 
 
@@ -798,3 +802,40 @@ def test_domestic_chipmaker_keeps_the_compute_rent_home():
     off = ModelV3(_replace(_sv3.stacked_rents_offshore(), n_agents=300, periods=T, seed=0)); off.run()
     assert _foreign_own(home) < _foreign_own(imp) - 0.05      # home chips keep the rent
     assert abs(_foreign_own(off) - _foreign_own(imp)) < 0.02  # s_home is inert for it
+
+
+# ---- Experiment R: elastic labour supply and the bottleneck wage ----
+
+def _two_ch_steady(m):
+    """Steady-state cluster aggregates for a finished two-channel run."""
+    W = slice(250, m.p.periods)
+    wLr = np.array(m.hist.w_Lr)[W].sum(); ciKr = np.array(m.hist.ci_Kr)[W].sum()
+    wuR = float(np.mean(m.hist.wage_unit_r[-50:]))
+    wuC = float(np.mean(m.hist.wage_unit_c[-50:]))
+    return dict(routine_labshare=wLr / (wLr + ciKr), wuR=wuR, ratio=wuR / max(wuC, 1e-9))
+
+
+def test_elastic_supply_is_inert_at_zero():
+    """Regression guard: zero elasticities reproduce the fixed-supply model exactly."""
+    T = 300
+    base = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); base.run()
+    inel = ModelV3(_replace(_sv3.labour_inelastic(), n_agents=300, periods=T, seed=0)); inel.run()
+    assert inel._sf_r == 1.0 and inel._sf_c == 1.0
+    assert np.allclose(np.array(base.hist.w_Lr), np.array(inel.hist.w_Lr))
+    assert np.allclose(np.array(base.hist.wage_unit_r), np.array(inel.hist.wage_unit_r))
+
+
+def test_elastic_supply_dampens_the_bottleneck_wage():
+    """The bottleneck (routine) per-unit wage spike and the routine/cognitive
+    scarcity premium are both competed down once supply is elastic, and within the
+    bottleneck cluster the surplus shifts toward capital (labour share falls)."""
+    T = 400
+    inel = ModelV3(_replace(_sv3.labour_inelastic(), n_agents=300, periods=T, seed=0)); inel.run()
+    elas = ModelV3(_replace(_sv3.labour_elastic_strong(), n_agents=300, periods=T, seed=0)); elas.run()
+    i, e = _two_ch_steady(inel), _two_ch_steady(elas)
+    assert e["wuR"] < i["wuR"]                       # bottleneck wage dampened
+    assert e["ratio"] < i["ratio"]                    # scarcity premium collapses
+    assert e["routine_labshare"] < i["routine_labshare"]   # cluster surplus to capital
+    assert elas._sf_r > 1.0                           # labour did expand
+    assert abs(elas.deposits_sum()) < 1e-3
+    assert abs(elas.total_nw() - elas.real_assets()) < 1e-3

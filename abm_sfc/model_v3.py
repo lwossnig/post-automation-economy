@@ -209,6 +209,20 @@ class ParamsV3:
     unemployment_pass_through: float = 0.0
     unemployment_benefit: float = 0.0
     ubi_labour_supply: float = 0.0
+    # ---- Experiment R: elastic labour supply and the bottleneck wage ----
+    # The prior model has FIXED labour supply, so each labour type is paid its
+    # marginal product and automation mechanically raises wages. These elasticities
+    # make the effective labour supplied per cluster respond (on the intensive
+    # margin) to the cluster's per-unit wage relative to a fixed reference, solved by
+    # a short tatonnement against the CES each period. With abundant (elastic) labour
+    # a bottleneck task does NOT command a high wage: supply expands, the wage stays
+    # near the reservation floor, and the surplus accrues to capital. reservation_wage
+    # is the floor as a fraction of the period-0 per-unit wage; below it workers
+    # withdraw. All zero = the fixed-supply model exactly. Setting elast_r high and
+    # elast_c low reproduces labour-market polarisation (a within-labour wage elite).
+    labour_supply_elast_r: float = 0.0   # routine-labour supply elasticity
+    labour_supply_elast_c: float = 0.0   # cognitive-labour supply elasticity
+    reservation_wage: float = 0.0        # wage floor as a fraction of the reference per-unit wage
     # two capital stocks: split of the initial stock and separate depreciation
     robot_capital_share0: float = 0.5   # share of initial K that is robotic (rest AI compute)
     depreciation_r: float = 0.05        # robotic capital depreciation
@@ -365,6 +379,11 @@ class HistoryV3:
     a_ai: list = field(default_factory=list)               # AI task share
     w_Lr: list = field(default_factory=list)               # routine wage bill
     w_Lc: list = field(default_factory=list)               # cognitive wage bill
+    wage_unit_r: list = field(default_factory=list)        # routine per-unit (take-home) wage (Exp R)
+    wage_unit_c: list = field(default_factory=list)        # cognitive per-unit wage (Exp R)
+    labour_supply_r: list = field(default_factory=list)    # effective routine labour supplied (Exp R)
+    labour_supply_c: list = field(default_factory=list)    # effective cognitive labour supplied (Exp R)
+    gini_labour: list = field(default_factory=list)        # within-labour income Gini (Exp R)
     ci_Kr: list = field(default_factory=list)              # robotic capital income
     ci_Kai: list = field(default_factory=list)             # AI capital income
     exports: list = field(default_factory=list)            # rent repatriated as real goods (Phase 1a)
@@ -386,6 +405,11 @@ class ModelV3:
             self.prod4 = NestedProduction(
                 A=p.A, e_top=p.e_top, e_routine=p.e_routine, e_cog=p.e_cog,
                 theta=p.theta_cog)
+        # Experiment R: fixed reference per-unit wages for the elastic-supply curve,
+        # set lazily on the first step (None until then).
+        self._w_ref_r = None
+        self._w_ref_c = None
+        self._sf_r = self._sf_c = 1.0
 
         # --- labour endowment: per-agent skill (efficiency units) and employment ---
         if p.skill_dispersion > 0:
@@ -485,6 +509,40 @@ class ModelV3:
             return 0.0
         z = p.a_ai_speed * (self.t - p.a_ai_start - p.reinstate_lag)
         return float(p.reinstate_frac / (1.0 + np.exp(-z)))
+
+    def _elastic_labour(self, Lr0, Lc0, a_r, a_ai):
+        """Experiment R: solve the effective labour supplied per cluster.
+
+        Each cluster's labour supply slopes up in its per-unit wage relative to a
+        fixed period-0 reference, floored at the reservation wage. The per-unit wage
+        is the marginal product (the cluster wage bill / labour), so wage and quantity
+        are jointly determined; we solve the fixed point by a short damped tatonnement
+        against the CES. Returns (L_r, L_c, supply_factor_r, supply_factor_c). With
+        both elasticities zero this returns the fixed pools unchanged.
+        """
+        p = self.p
+        er, ec = p.labour_supply_elast_r, p.labour_supply_elast_c
+        if er <= 0.0 and ec <= 0.0:
+            return Lr0, Lc0, 1.0, 1.0
+        # fixed reference per-unit wages, set once at the first call (period 0)
+        if self._w_ref_r is None:
+            d0 = self._decompose(self.K_r, self.K_ai, Lr0, Lc0, a_r, a_ai)
+            self._w_ref_r = max(d0["w_Lr"] / max(Lr0, 1e-9), 1e-9)
+            self._w_ref_c = max(d0["w_Lc"] / max(Lc0, 1e-9), 1e-9)
+        res_r = p.reservation_wage * self._w_ref_r
+        res_c = p.reservation_wage * self._w_ref_c
+        Lr, Lc, damp = Lr0, Lc0, 0.5
+        for _ in range(8):
+            d = self._decompose(self.K_r, self.K_ai, Lr, Lc, a_r, a_ai)
+            wur = d["w_Lr"] / max(Lr, 1e-9)        # routine per-unit (demand) wage
+            wuc = d["w_Lc"] / max(Lc, 1e-9)        # cognitive per-unit wage
+            tgt_r = Lr0 * (max(wur, res_r) / self._w_ref_r) ** er if er > 0.0 else Lr0
+            tgt_c = Lc0 * (max(wuc, res_c) / self._w_ref_c) ** ec if ec > 0.0 else Lc0
+            tgt_r = float(np.clip(tgt_r, 0.2 * Lr0, 6.0 * Lr0))
+            tgt_c = float(np.clip(tgt_c, 0.2 * Lc0, 6.0 * Lc0))
+            Lr = (1.0 - damp) * Lr + damp * tgt_r
+            Lc = (1.0 - damp) * Lc + damp * tgt_c
+        return Lr, Lc, Lr / max(Lr0, 1e-9), Lc / max(Lc0, 1e-9)
 
     def _employment(self, a_r, a_ai):
         """Phase 2 (piece 2): turn part of the labour-share fall into unemployment.
@@ -633,6 +691,11 @@ class ModelV3:
             L_r = max(float(eff[~self.cognitive].sum()), 1e-6)   # routine labour pool
             L_c = max(float(eff[self.cognitive].sum()), 1e-6)    # cognitive labour pool
             a_r, a_ai = self.a_r_t(), self.a_ai_t()
+            # Experiment R: let the effective labour pools respond to the per-unit wage
+            # (intensive margin), solved against the CES. With elasticities zero this
+            # leaves L_r, L_c unchanged. The wage bill is still distributed over the raw
+            # employed labour below, so an expanded supply lowers the per-unit wage.
+            L_r, L_c, self._sf_r, self._sf_c = self._elastic_labour(L_r, L_c, a_r, a_ai)
             # Phase 2 (piece 2): employment overlay. Production keeps the full labour
             # pools L_r, L_c above; emp_status only governs who EARNS the wage bill.
             self.emp_status = self._employment(a_r, a_ai)
@@ -1291,6 +1354,12 @@ class ModelV3:
             self.hist.a_ai.append(float(a_ai))
             self.hist.w_Lr.append(float(w_Lr))
             self.hist.w_Lc.append(float(w_Lc))
+            self.hist.wage_unit_r.append(float(w_Lr / max(L_r, 1e-9)))
+            self.hist.wage_unit_c.append(float(w_Lc / max(L_c, 1e-9)))
+            self.hist.labour_supply_r.append(float(L_r))
+            self.hist.labour_supply_c.append(float(L_c))
+            emp_mask = self.emp_status > 0.0
+            self.hist.gini_labour.append(float(gini(wage_i[emp_mask])) if emp_mask.sum() > 1 else 0.0)
             self.hist.ci_Kr.append(float(ci_Kr))
             self.hist.ci_Kai.append(float(ci_Kai))
             self.hist.exports.append(float(self._X_row))

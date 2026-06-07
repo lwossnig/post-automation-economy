@@ -279,3 +279,37 @@ REGISTRY.update({
     "stacked_rents_usage": stacked_rents_usage,
     "stacked_rents_offshore": stacked_rents_offshore,
 })
+
+
+# --- Experiment R: elastic labour supply and the bottleneck wage -------------
+# The baseline pays each labour type its marginal product with FIXED supply, so the
+# task AI cannot do (the physical/routine bottleneck) becomes a scarce complement to
+# robotic capital and its per-unit wage explodes: the model's "automation raises
+# wages" result. labour_inelastic is that baseline. The elastic scenarios make the
+# bottleneck labour abundant (an upward-sloping supply with a reservation floor), so
+# the scarcity premium is competed away: the bottleneck wage is dampened, the
+# wuR/wuC premium collapses, and within the bottleneck cluster the surplus shifts to
+# capital. Elasticities are kept in the range where the fixed point converges below
+# the supply safety band. (At the aggregate the labour share need not fall, because
+# the labour-intensive bottleneck cluster expands; the clean result is the bottleneck
+# WAGE, not the economy-wide share.)
+def labour_inelastic():
+    """Fixed labour supply (the current model); the sanity anchor."""
+    return replace(TWO_CH)
+
+
+def labour_elastic_routine():
+    """Abundant, elastic routine (bottleneck) labour with a reservation floor."""
+    return replace(TWO_CH, labour_supply_elast_r=0.2, reservation_wage=0.5)
+
+
+def labour_elastic_strong():
+    """A stronger supply response: the bottleneck premium is competed away further."""
+    return replace(TWO_CH, labour_supply_elast_r=0.3, reservation_wage=0.5)
+
+
+REGISTRY.update({
+    "labour_inelastic": labour_inelastic,
+    "labour_elastic_routine": labour_elastic_routine,
+    "labour_elastic_strong": labour_elastic_strong,
+})
