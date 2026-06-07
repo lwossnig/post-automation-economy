@@ -2110,6 +2110,126 @@ domestic equity is degenerate here because its yield is around zero to
 negative, so the value sits entirely in the foreign-held IP.}
 \end{figure}
 
+\hypertarget{q-two-stacked-foreign-rents-compute-and-model}{%
+\subsection{Q \textperiodcentered{} Two stacked foreign rents: compute and
+model}\label{q-two-stacked-foreign-rents-compute-and-model}}
+
+\textbf{Stacked rents.} The paper has bundled all durable foreign surplus into one
+IP licence rent on the cognitive cluster. In reality the compute layer earns its own
+rent: the accelerator design and its software ecosystem (the NVIDIA-and-CUDA case)
+command a margin that is mostly foreign-held and, unlike the model rent, embedded in
+the \emph{price} of AI capital rather than flowing as a recurring licence fee. This
+extension (foreshadowed in Appendix A.2) splits the foreign owner into two rentiers:
+the existing IP rent, and a compute rent (\texttt{mu\_compute}) peeled from the AI
+capital income, with its own domicile and its own reachability. The point of interest
+is not its size but its \emph{form}: a withholding or a digital-services levy sits in
+the path of a licence flow, not a goods price, so the instruments the paper recommends
+do not obviously reach it.
+
+The model bears this out. A compute rent of about six per cent of output, stacked on
+the IP rent, lifts steady-state foreign ownership from about 69 to about 75 per cent
+(Figure 28): a second foreign rent accelerates the drift of ownership abroad, exactly
+as the embodied-robot-IP rent did (subsection in Appendix A.2). The instrument
+contrast is the result. The digital-services levy and the withholding, which capture
+the licence rent, collect \emph{nothing} from the compute rent, because it never
+appears as a cross-border fee; only a tariff on imported compute (about 1.7 per cent
+of output recovered here) or a usage levy on inference (about 3.7 per cent, since it
+falls on the whole compute bill) reaches it, and a domestic chip-maker keeps it home
+outright (foreign ownership falls to about 44 per cent, and to zero when both rents are
+domestic). Onshoring the servers does not help: with the compute on foreign-owned
+hardware (low \texttt{s\_home}) the take is unchanged, because the rent is paid in the
+capital-good price wherever the box physically sits. So the stacked rent both deepens
+the importer\textquotesingle s predicament and adds a surplus that the paper\textquotesingle s
+own reaching instruments miss, unless the host reaches for a border or usage tax.
+
+\emph{For Britain concretely:} a rent-importer that taxes the model rent with a digital
+levy still leaks the chip rent embedded in every GPU it imports, and onshoring the data
+centres does not change that. Reaching it needs either an instrument at the border or a
+domestic stake in the compute layer, neither of which is the levy the rest of the paper
+recommends.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{figures_v3/expQ_stacked_rents.png}
+\caption*{\textbf{Figure 28} Two stacked foreign rents. Left: steady-state foreign
+ownership of capital. A compute rent stacked on the IP rent raises it; a tariff, a
+usage levy, or a domestic chip-maker pull it back, while offshoring the servers leaves
+it unchanged. Right: what each instrument collects. The digital-services levy and the
+withholding (grey) reach the licence rent but collect nothing from the compute rent;
+only the tariff and usage levy (teal) touch the goods-embedded rent.}
+\end{figure}
+
+\hypertarget{r-elastic-labour-supply-and-the-bottleneck-wage}{%
+\subsection{R \textperiodcentered{} Elastic labour supply and the bottleneck
+wage}\label{r-elastic-labour-supply-and-the-bottleneck-wage}}
+
+\textbf{The bottleneck wage.} The model pays each labour type its marginal product
+with fixed supply, so as robotic capital accumulates the task it cannot do (the
+physical, routine bottleneck) becomes a scarce complement and its wage rises sharply:
+this is the model\textquotesingle s ``automation raises wages\textquotesingle\textquotesingle{}
+result. The objection is that a task hard for a machine but easy for any human need not
+command a high wage, because abundant labour competes it down. This extension makes the
+effective labour supplied in each cluster slope up in its own per-unit wage, with a
+reservation floor, solved as a short fixed point against the technology.
+
+Letting the bottleneck labour be elastic competes its scarcity premium away (Figure 29).
+Under fixed supply the routine per-unit wage runs to roughly thirty-six times the
+cognitive one; with an elastic supply that ratio collapses toward three, and within the
+bottleneck cluster the surplus shifts to capital (its labour share falls from about
+0.79 to about 0.77). The honest qualification is that this is a result about the
+bottleneck \emph{wage}, not the economy-wide labour share: because the labour-intensive
+cluster expands as labour floods in, the aggregate labour share need not fall and may
+even rise slightly. So the experiment does not show that automation lowers the labour
+share; it shows that the dramatic bottleneck-wage spike in the headline model is an
+artefact of inelastic supply, and that the reassurance ``the workers doing what AI
+cannot will be paid handsomely\textquotesingle\textquotesingle{} is fragile once that
+labour is abundant.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{figures_v3/expR_labour_supply.png}
+\caption*{\textbf{Figure 29} Elastic labour supply and the bottleneck wage. Left: the
+routine (bottleneck) per-unit wage path; an elastic supply competes away the spike that
+fixed supply produces. Right: the routine/cognitive wage premium collapses as supply is
+made elastic, and the bottleneck cluster\textquotesingle s labour share falls (the
+surplus moves to capital), while the aggregate labour share need not.}
+\end{figure}
+
+\hypertarget{s-endogenous-cost-driven-automation}{%
+\subsection{S \textperiodcentered{} Endogenous, cost-driven
+automation}\label{s-endogenous-cost-driven-automation}}
+
+\textbf{Paying for itself.} Automation has so far been an exogenous logistic ramp.
+The MIT ``Beyond AI Exposure\textquotesingle\textquotesingle{} result is that only
+cost-effective tasks are automated, and gradually. This extension keeps the logistic
+as the technical frontier but gates it by cost: a task is automated only when the
+machine is cheaper than the human wage for it, with the machine cost starting above the
+wage and declining at a calibrated rate, and rising bottleneck wages opening the gate
+further (the feedback).
+
+The transition still arrives, but its pace is set by the cost decline (Figure 30).
+Where the exogenous frontier reaches near-full automation by about period 125, a slow
+cost decline delays the realised transition to about period 350 and leaves it partial
+for long stretches; a middle (MIT-baseline) decline brings it to about period 195; a
+fast decline returns it almost to the frontier timing; and AI-as-a-service scale
+economies pull it forward. Crucially it does arrive in every case, because once a
+little automation raises the bottleneck wage the gate opens wider, so the result is a
+question of \emph{how fast and how far}, not \emph{whether}. The timing of the
+distributional shift (the rise in foreign ownership and in wealth concentration) tracks
+the cost-decline speed directly, which quantifies the ``premise might not hold yet
+\textquotesingle\textquotesingle{} caveat without overturning it: a realistic,
+cost-paced rollout still delivers a substantial transition over a couple of decades.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{figures_v3/expS_endogenous_automation.png}
+\caption*{\textbf{Figure 30} Endogenous, cost-driven automation. Left: realised AI
+task share against the exogenous frontier (dashed). Cost-gated automation lags the
+frontier, and the lag is governed by how fast the machine cost falls. Right: the
+mature wealth Gini and the foreign-ownership share move with the cost-decline speed, so
+a slower rollout postpones the distributional shift rather than preventing it.}
+\end{figure}
+
 \hypertarget{carried}{}
 \hypertarget{further-results-condensation-speed-leakage-and-the-cost-of-waiting}{%
 \section{Further results: condensation speed, leakage, and the cost of
@@ -2888,19 +3008,29 @@ results}\label{what-would-sharpen-the-results}}
   well, and anchoring the profit-shifting elasticity to estimates rather
   than a calibrated value.
 \item
-  \textbf{A stacked compute rent.} The model bundles the chip-maker and
-  the model-owner into a single foreign rentier. A fuller treatment
-  would peel a second wedge from the compute input price (a
-  \texttt{mu\_frac} twin on the AI-compute stock) held by a distinct
-  foreign owner, with its own contestability dial, the experiment-O
-  question asked of the compute layer rather than the model layer, where
-  the current evidence on accelerator margins cuts against
-  commoditisation. Because that rent is embedded in a capital good
-  rather than a licence flow, the exercise would also let the model
-  price the one instrument the present levers omit, a tariff or usage
-  charge on imported compute, and quantify how much of the durable
-  surplus the source levy alone leaves uncaptured (the form-of-rent
-  qualification in Appendix A.2).
+  \textbf{A stacked compute rent.} Implemented as experiment Q
+  (subsection Q): a second foreign rent (\texttt{mu\_compute}) on the
+  compute layer, embedded in the AI capital-good price rather than a
+  licence flow, with its own domicile and reachability. It confirms that
+  the compute rent accelerates ownership drift and is missed by the
+  digital levy and the withholding, reached only by a tariff, a usage
+  levy, or a domestic chip-maker. What remains for future work is to give
+  the two rents independent persistence (the contestability dial of
+  experiment O asked of the compute layer, to test the durability
+  asymmetry between a sticky model rent and a possibly-commoditising
+  hardware rent), and the more literal up-front capex form of the markup
+  rather than the recurring wedge used here.
+\item
+  \textbf{Elastic labour supply and endogenous automation.} Implemented
+  as experiments R and S. R relaxes fixed labour supply and shows the
+  bottleneck-wage spike is an artefact of inelastic supply (the
+  scarcity premium competes away), though the aggregate labour share
+  need not fall. S makes automation cost-driven rather than an exogenous
+  ramp and shows the transition still arrives but at a pace set by the
+  cost decline. Both remain reduced-form: a richer treatment would give
+  labour an explicit participation margin and an extensive
+  unemployment response in R, and a calibrated per-task cost
+  distribution (rather than a single threshold) in S.
 \end{itemize}
 
 \hypertarget{realism-and-robustness}{%
@@ -3055,11 +3185,13 @@ through. Disaggregating the single foreign owner into a chip-maker and a
 model-owner, each with its own size, durability, location and
 taxability, would therefore deepen the importer\textquotesingle s
 predicament (more foreign rent, faster ownership drift) while adding one
-rent that even the reaching instruments miss. We carry the full
-two-rentier treatment as an extension (below); the point to register
-here is that confining the rent to a single, withholding-reachable
-\emph{form}, like confining it to the AI cluster, understates rather
-than overstates the problem.
+rent that even the reaching instruments miss. We implement this as
+experiment Q (subsection Q), which confirms both halves: a stacked
+compute rent raises foreign ownership, and the digital levy and
+withholding collect nothing from it while a tariff or usage levy do. The
+point to register here is that confining the rent to a single,
+withholding-reachable \emph{form}, like confining it to the AI cluster,
+understates rather than overstates the problem.
 
 \hypertarget{a.3-production-and-technology}{%
 \subsection{A.3 Production and
