@@ -13,7 +13,7 @@ are kept for provenance and for the carried-over figures cited in the report.
 ## Paper
 
 This code accompanies the paper *Simulating a Post-Automation Economy* (Leonard Wossnig, 2026).
-Preprint: **arXiv:XXXX.XXXXX** *(link to follow)*. The full PDF and LaTeX source are in [`paper_latex/`](paper_latex/).
+The full PDF and LaTeX source are in [`paper_latex/`](paper_latex/). An arXiv preprint link will be added once it is posted.
 
 If you use this model or its results, please cite the paper and this repository (a `CITATION.cff` is included, so GitHub shows a "Cite this repository" button).
 

@@ -26,7 +26,4 @@ preferred-citation:
       family-names: Wossnig
       affiliation: "Department of Computer Science, University College London"
   year: 2026
-  # Fill in once the preprint is announced (Tuesday):
-  # journal: "arXiv preprint"
-  # url: "https://arxiv.org/abs/XXXX.XXXXX"
-  # doi: "10.48550/arXiv.XXXX.XXXXX"
+  # arXiv journal/url/doi fields will be added once the preprint is posted.
