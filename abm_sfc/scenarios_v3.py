@@ -233,3 +233,49 @@ def rising_rent_both():
 def robot_ip_rent():
     """Robots carry an IP rent of the same order as the AI markup (0.25)."""
     return replace(TWO_CH, robot_ip=0.25)
+
+
+# --- Experiment Q: two stacked foreign rents (compute vs model) --------------
+# A second durable rent sits on the COMPUTE layer (chip design + ecosystem lock-in),
+# embedded in the price of AI capital rather than flowing as a licence fee. The base
+# case adds it on top of the foreign IP rent (the pure importer); variants move its
+# domicile home or reach for it with the two new instruments. mu_compute = 0.15 is a
+# compute markup of the same order as a fraction of the AI markup.
+def stacked_rents_importer():
+    """Both rents foreign: a compute/chip rent stacked on the foreign IP rent."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0)
+
+
+def stacked_rents_us_chips():
+    """Compute rent domestic (a home chip-maker), IP rent still foreign."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=0.0)
+
+
+def stacked_rents_full_owner():
+    """Both rents domestic: the full owner (compute and model at home)."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=0.0, ai_ip_foreign=0.0)
+
+
+def stacked_rents_tariff():
+    """Pure importer plus a border tariff on the imported compute rent."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0, tariff_compute=0.30)
+
+
+def stacked_rents_usage():
+    """Pure importer plus a usage levy on the compute bill (partial reach)."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0, usage_levy=0.10)
+
+
+def stacked_rents_offshore():
+    """Pure importer with compute offshored: onshoring (s_home) does NOT reach it."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0, s_home=0.20)
+
+
+REGISTRY.update({
+    "stacked_rents_importer": stacked_rents_importer,
+    "stacked_rents_us_chips": stacked_rents_us_chips,
+    "stacked_rents_full_owner": stacked_rents_full_owner,
+    "stacked_rents_tariff": stacked_rents_tariff,
+    "stacked_rents_usage": stacked_rents_usage,
+    "stacked_rents_offshore": stacked_rents_offshore,
+})

@@ -241,6 +241,20 @@ class ParamsV3:
     # the AI markup is peeled from the cognitive cluster; it is reached by the same
     # source levy and missed by the hardware robot tax. 0 = robots earn no rent.
     robot_ip: float = 0.0
+    # ---- Experiment Q: a second, stacked foreign rent on the COMPUTE layer ----
+    # The chip/compute layer (accelerator design + ecosystem lock-in, NVIDIA being
+    # the case) earns its own durable, mostly-foreign rent. Unlike the AI IP rent,
+    # which is a recurring licence flow, the compute rent is EMBEDDED IN THE PRICE
+    # of AI capital (paid as part of what the firm pays for compute). We model it as
+    # a wedge peeled from the AI capital income (ci_Kai), mirroring the robot_ip /
+    # mu_frac wedges. The economically important difference is its TAXABILITY: a
+    # withholding/DST sits in the path of a licence flow but NOT a goods price, so
+    # the compute rent escapes dst_ai and tax_repat and is reachable only by a
+    # tariff on imported compute (tariff_compute) or a pass-through usage levy
+    # (usage_levy), or by a domestic chip-maker (compute_foreign = 0). 0 = the
+    # prior model exactly (no compute rent).
+    mu_compute: float = 0.0        # compute rent as a markup share of AI capital income
+    compute_foreign: float = 1.0   # share of the compute rent owned abroad (cf. ai_ip_foreign)
     s_home: float = 1.0            # fraction of AI compute located on home servers
     # ai_ip_foreign is the share of the AI IP (and so of its rent) owned abroad. At 1
     # the rent leaves as a cross-border licence fee and is reachable only by source
@@ -253,6 +267,15 @@ class ParamsV3:
     # differential instruments
     robot_tax: float = 0.0         # source tax on robotic capital income (fully collected)
     dst_ai: float = 0.0            # digital-services levy on AI revenue (rent + AI capital income)
+    # ---- Experiment Q: the two instruments that reach a goods-embedded rent ----
+    # tariff_compute: a border/customs levy on the foreign compute rent (the margin
+    #   embedded in imported compute). The one instrument that catches a capital-good
+    #   price, which the withholding and DST miss. Collected to the government.
+    # usage_levy: a levy on inference/usage, modelled as a charge on AI capital income
+    #   (ci_Kai) that the provider passes through. Reaches PART of the compute rent
+    #   regardless of its form. Both 0 = no border/usage instrument (prior model).
+    tariff_compute: float = 0.0
+    usage_levy: float = 0.0
     # ---- Phase 1a: open-economy goods trade (current account) ----
     # trade_leak (phi) is the fraction of the foreign owner's AFTER-HOST-TAX rent
     # that is repatriated as REAL RESOURCES: the owner consumes domestic output
@@ -336,6 +359,8 @@ class HistoryV3:
     K_ai: list = field(default_factory=list)               # AI compute capital stock
     rent_ai: list = field(default_factory=list)            # AI IP rent (markup) per period
     rent_robot: list = field(default_factory=list)         # embodied-IP rent on robots (default 0)
+    rent_compute: list = field(default_factory=list)       # compute/chip rent on AI capital (Exp Q, default 0)
+    compute_rev: list = field(default_factory=list)        # govt take from tariff + usage levy (Exp Q)
     a_r: list = field(default_factory=list)                # robotic task share
     a_ai: list = field(default_factory=list)               # AI task share
     w_Lr: list = field(default_factory=list)               # routine wage bill
@@ -828,7 +853,15 @@ class ModelV3:
             rent_ai = self._mu_eff * d2["s_c"] * Y
             rent_robot = self._mu_robot * d2["s_r"] * Y
             ci_Kr = d2["ci_Kr"] * (1.0 - self._mu_robot) * sc
-            ci_Kai = d2["ci_Kai"] * (1.0 - self._mu_eff) * sc
+            ci_Kai_comp = d2["ci_Kai"] * (1.0 - self._mu_eff) * sc   # AI capital income net of the IP rent
+            # Experiment Q: the compute/chip rent is a wedge on the AI capital income
+            # (the foreign chip-maker's margin embedded in the price of compute).
+            # Peeled here so capital_income excludes it, exactly like the IP rent; it
+            # leaves to the rest of the world in section 8, but reached by neither the
+            # DST nor the withholding (it is a goods price, not a licence flow).
+            self._mu_compute = float(np.clip(p.mu_compute, 0.0, 0.9))
+            rent_compute = self._mu_compute * np.clip(ci_Kai_comp, 0.0, None)
+            ci_Kai = ci_Kai_comp - rent_compute
             w_Lr = d2["w_Lr"] * (1.0 - self._mu_robot) * sc
             w_Lc = d2["w_Lc"] * (1.0 - self._mu_eff) * sc
             wage_bill = w_Lr + w_Lc
@@ -847,6 +880,8 @@ class ModelV3:
             wage_i = (wage_bill / L) * self.skill * self.employed
             rent_ai = 0.0
             rent_robot = 0.0
+            rent_compute = 0.0
+            self._mu_compute = 0.0
             ci_Kr = ci_Kai = 0.0
 
             net_profit = capital_income - dep_flow
@@ -862,7 +897,12 @@ class ModelV3:
             # (what the DST and withholding reach); the domestic share stays home as
             # capital income to resident owners (reached instead by domestic taxes).
             self._royalty_foreign = p.ai_ip_foreign * rent_total
-            self._rent_dom = rent_total - self._royalty_foreign
+            # Experiment Q: the compute rent splits by chip-maker domicile. The
+            # foreign part leaves abroad (section 8) but is invisible to the DST and
+            # the withholding; the domestic part (a home chip-maker) stays as resident
+            # capital income alongside the domestic IP rent.
+            self._compute_foreign = p.compute_foreign * rent_compute
+            self._rent_dom = (rent_total - self._royalty_foreign) + (rent_compute - self._compute_foreign)
             # Phase 3: the optimising owner shifts a share of the rent recognition
             # offshore when the host taxes it, escaping the DST and the withholding.
             self._rent_shift = 0.0
@@ -877,9 +917,22 @@ class ModelV3:
             self._dst_rent = p.dst_ai * np.clip(self._royalty_foreign, 0, None) * (1.0 - self._rent_shift)  # on recognised foreign rent
             corp_tax = ord_corp + robot_tax_amt + dst_cap                 # taxes from firm surplus
             after_tax = net_profit - corp_tax
+            # Experiment Q: the two instruments that reach a goods-embedded rent. The
+            # tariff catches the foreign compute rent at the border (a customs charge
+            # on imported compute); the usage levy taxes the compute bill (AI capital
+            # income gross of the embedded rent) and so catches PART of that rent. Both
+            # are collected by the host without reducing the foreign owner's price; the
+            # DST and withholding above never touch them.
+            self._tariff_rev = p.tariff_compute * np.clip(self._compute_foreign, 0.0, None)
+            self._usage_rev = p.usage_levy * np.clip(ci_Kai + rent_compute, 0.0, None)
+            self._compute_rev = self._tariff_rev + self._usage_rev
         else:
             self._dst_rent = 0.0
             self._rent_shift = 0.0
+            self._compute_foreign = 0.0
+            self._tariff_rev = 0.0
+            self._usage_rev = 0.0
+            self._compute_rev = 0.0
             # Profit shifting by foreign-operated automation: a fraction profit_shift
             # of the economic profit on the foreign-operated share of the capital is
             # relocated abroad as a deductible royalty/IP charge, recognised in the
@@ -959,13 +1012,17 @@ class ModelV3:
         house_flow = (wage_i + int_house + ubi_i + fund_rebate + div_house + rent_dom_i
                       + repat_rebate_i + benefit_i - consumption - income_tax - wt_cash)
         gov_flow = (corp_tax + income_tax.sum() + wt_cash.sum() + div_state
-                    + int_gov + repat_cash + self._dst_rent - repat_rebate_i.sum()
+                    + int_gov + repat_cash + self._dst_rent + self._compute_rev - repat_rebate_i.sum()
                     - ubi_total - G - fund_rebate.sum() - benefit_i.sum())
-        row_flow = div_row + int_row + self._royalty_foreign - repat_cash - self._dst_rent - self._X_row
+        # The foreign compute rent leaves abroad net of the border tariff; the usage
+        # levy is borne by the firm (paid out of the compute bill, like the rent).
+        row_flow = (div_row + int_row + self._royalty_foreign + self._compute_foreign
+                    - repat_cash - self._dst_rent - self._tariff_rev - self._X_row)
         self.h_dep += house_flow
         self.gov_dep += gov_flow
         self.row_dep += row_flow
-        self.firm_dep += (C + G + self._X_row) - wage_bill - corp_tax - dividends_tot - royalty + int_firm
+        self.firm_dep += ((C + G + self._X_row) - wage_bill - corp_tax - dividends_tot
+                          - royalty - rent_compute - self._usage_rev + int_firm)
 
         # government balance (diagnostic): revenue + interest - outlays
         gov_balance = (corp_tax + income_tax.sum() + wt_cash.sum() + div_state
@@ -1228,6 +1285,8 @@ class ModelV3:
             self.hist.K_ai.append(float(self.K_ai))
             self.hist.rent_ai.append(float(rent_ai))
             self.hist.rent_robot.append(float(rent_robot))
+            self.hist.rent_compute.append(float(rent_compute))
+            self.hist.compute_rev.append(float(self._compute_rev))
             self.hist.a_r.append(float(a_r))
             self.hist.a_ai.append(float(a_ai))
             self.hist.w_Lr.append(float(w_Lr))

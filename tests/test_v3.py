@@ -754,3 +754,47 @@ def test_robot_ip_rent_source_levy_reaches_hardware_tax_misses():
     # the source levy pulls foreign ownership down materially; the hardware robot tax barely moves it
     assert fo_levy < fo_u - 0.10
     assert abs(fo_robot - fo_u) < abs(fo_levy - fo_u)
+
+
+# ---- Experiment Q: two stacked foreign rents (compute vs model) ----
+
+def test_compute_rent_accelerates_ownership_drift():
+    """A second, foreign compute rent stacked on the IP rent raises the mature
+    foreign-ownership share above the IP-rent-only baseline."""
+    T = 400
+    base = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); base.run()
+    stk = ModelV3(_replace(_sv3.stacked_rents_importer(), n_agents=300, periods=T, seed=0)); stk.run()
+    assert np.array(stk.hist.rent_compute)[-50:].mean() > 0.0      # compute rent is positive
+    assert np.array(base.hist.rent_compute)[-50:].mean() == 0.0    # zero in the baseline
+    assert _foreign_own(stk) > _foreign_own(base) + 0.02
+    assert abs(stk.deposits_sum()) < 1e-3
+    assert abs(stk.total_nw() - stk.real_assets()) < 1e-3
+
+
+def test_dst_and_withholding_miss_the_compute_rent():
+    """The licence-flow instruments (DST, withholding) collect NOTHING from the
+    compute rent, while the tariff and the usage levy do. The compute-rent take is
+    recorded in hist.compute_rev."""
+    T = 400
+    def take(make):
+        m = ModelV3(_replace(make(), n_agents=300, periods=T, seed=0)); m.run()
+        return np.array(m.hist.compute_rev)[100:].sum()
+    imp = take(_sv3.stacked_rents_importer)
+    dst = take(lambda: _replace(_sv3.stacked_rents_importer(), dst_ai=0.10))
+    wht = take(lambda: _replace(_sv3.stacked_rents_importer(), tax_repat=0.30, repat_rebate=True))
+    tar = take(_sv3.stacked_rents_tariff)
+    use = take(_sv3.stacked_rents_usage)
+    assert imp == 0.0 and dst == 0.0 and wht == 0.0   # none of these reach it
+    assert tar > 0.0 and use > 0.0                     # the border/usage levers do
+
+
+def test_domestic_chipmaker_keeps_the_compute_rent_home():
+    """Moving the chip-maker's domicile home (compute_foreign=0) keeps the rent and
+    lowers foreign ownership relative to the importer; onshoring servers (s_home)
+    does not."""
+    T = 400
+    imp = ModelV3(_replace(_sv3.stacked_rents_importer(), n_agents=300, periods=T, seed=0)); imp.run()
+    home = ModelV3(_replace(_sv3.stacked_rents_us_chips(), n_agents=300, periods=T, seed=0)); home.run()
+    off = ModelV3(_replace(_sv3.stacked_rents_offshore(), n_agents=300, periods=T, seed=0)); off.run()
+    assert _foreign_own(home) < _foreign_own(imp) - 0.05      # home chips keep the rent
+    assert abs(_foreign_own(off) - _foreign_own(imp)) < 0.02  # s_home is inert for it
