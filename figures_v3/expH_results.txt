@@ -1,0 +1,9 @@
+scenario              rent/Y_ss  capRev/Y_ss  capRev/Y_tr  gov_nw/Y   Gini   f_row
+two_channel_base         13.06%        0.00%        0.82%      0.91  0.544   0.691
+robot_tax_only           13.07%        1.49%        2.97%      1.52  0.540   0.637
+ai_dst                   13.07%        3.72%        4.50%      2.80  0.535   0.514
+ai_withholding           13.16%        3.95%        5.46%      0.86  0.506   0.402
+offshore_compute         13.06%        0.00%        0.01%      0.91  0.544   0.691
+sovereign_compute        13.07%        5.21%        6.64%      3.20  0.531   0.481
+
+saved figures_v3/expH_two_channel.png

@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+title: "Simulating a Post-Automation Economy (AB-SFC model)"
+message: "If you use this software, please cite both the software and the paper."
+type: software
+authors:
+  - given-names: Leonard
+    family-names: Wossnig
+    affiliation: "Department of Computer Science, University College London"
+    email: leonard.wossnig.17@ucl.ac.uk
+repository-code: "https://github.com/USERNAME/post-automation-economy"
+license: MIT
+year: 2026
+keywords:
+  - agent-based model
+  - stock-flow-consistent
+  - macroeconomics
+  - automation
+  - artificial intelligence
+  - taxation
+  - wealth distribution
+preferred-citation:
+  type: article
+  title: "Simulating a Post-Automation Economy: An agent-based, stock-flow-consistent model of automation, microfounded wealth concentration, behavioural taxation, and capital mobility"
+  authors:
+    - given-names: Leonard
+      family-names: Wossnig
+      affiliation: "Department of Computer Science, University College London"
+  year: 2026
+  # Fill in once the preprint is announced (Tuesday):
+  # journal: "arXiv preprint"
+  # url: "https://arxiv.org/abs/XXXX.XXXXX"
+  # doi: "10.48550/arXiv.XXXX.XXXXX"

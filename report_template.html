@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulating a Post-Automation Economy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1714; --ink-soft:#4a423b; --faint:#8a8078;
+    --paper:#f6f1e7; --paper-2:#efe7d8; --card:#fbf8f1;
+    --rule:#d8cdb8; --rule-soft:#e6ddca;
+    --accent:#7c2d12;        /* burnt sienna */
+    --accent-2:#1d4e44;      /* deep teal */
+    --link:#9a3412;
+    --maxw:780px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper);
+    color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;
+    font-size:19px; line-height:1.68;
+    font-optical-sizing:auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* subtle paper grain */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    opacity:.5;
+    background-image:radial-gradient(var(--rule-soft) .5px, transparent .5px);
+    background-size:5px 5px;
+  }
+  .wrap{position:relative; z-index:1; max-width:var(--maxw); margin:0 auto; padding:0 28px 140px}
+
+  /* ---- masthead ---- */
+  header.masthead{
+    max-width:var(--maxw); margin:0 auto; padding:90px 28px 38px;
+    position:relative; z-index:1;
+  }
+  .kicker{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.32em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 26px;
+  }
+  h1.title{
+    font-family:"Fraunces",serif; font-weight:600; font-size:clamp(38px,6vw,62px);
+    line-height:1.02; letter-spacing:-.015em; margin:0 0 22px; color:var(--ink);
+  }
+  .subtitle{
+    font-family:"Newsreader",serif; font-style:italic; font-weight:400;
+    font-size:clamp(19px,2.4vw,23px); color:var(--ink-soft); line-height:1.4; margin:0 0 30px; max-width:62ch;
+  }
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 26px; align-items:baseline;
+    font-family:"IBM Plex Mono",monospace; font-size:12.5px; letter-spacing:.04em;
+    color:var(--faint); border-top:1px solid var(--rule); padding-top:18px;
+  }
+  .meta-row b{color:var(--ink-soft); font-weight:500}
+
+  /* ---- table of contents ---- */
+  nav.toc{
+    margin:44px 0 10px; padding:22px 26px; background:var(--card);
+    border:1px solid var(--rule); border-radius:3px;
+  }
+  nav.toc h2{
+    font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--faint); margin:0 0 14px; font-weight:500;
+  }
+  nav.toc ol{margin:0; padding:0; list-style:none; counter-reset:toc}
+  nav.toc li{
+    counter-increment:toc; font-size:16.5px; padding:3px 0; line-height:1.4;
+    display:flex; gap:12px; align-items:baseline;
+  }
+  nav.toc li::before{
+    content:counter(toc,decimal-leading-zero);
+    font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--accent);
+    min-width:26px;
+  }
+  nav.toc a{color:var(--ink-soft); text-decoration:none; border:0}
+  nav.toc a:hover{color:var(--accent)}
+
+  /* ---- sections ---- */
+  section{margin-top:62px}
+  h2.sec{
+    font-family:"Fraunces",serif; font-weight:600; font-size:30px; letter-spacing:-.01em;
+    line-height:1.12; margin:0 0 6px; color:var(--ink);
+    padding-bottom:12px; border-bottom:2px solid var(--ink);
+    display:flex; align-items:baseline; gap:16px;
+  }
+  h2.sec .num{
+    font-family:"IBM Plex Mono",monospace; font-size:14px; color:var(--accent);
+    font-weight:500; letter-spacing:.05em;
+  }
+  h3.sub{
+    font-family:"Fraunces",serif; font-weight:600; font-size:21px; letter-spacing:-.005em;
+    margin:36px 0 8px; color:var(--accent-2);
+  }
+  p{margin:0 0 17px}
+  .lead{font-size:21px; color:var(--ink-soft); line-height:1.6}
+  strong{font-weight:600; color:var(--ink)}
+  em{font-style:italic}
+  a{color:var(--link); text-underline-offset:2px; text-decoration-thickness:.5px}
+
+  .tag{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:500;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--accent);
+    margin-right:6px;
+  }
+  ul.clean{margin:0 0 17px; padding-left:22px}
+  ul.clean li{margin:0 0 9px; padding-left:4px}
+  ul.clean li::marker{color:var(--accent); content:"\2014  "}
+
+  code,.mono{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--paper-2);
+    padding:1px 5px; border-radius:3px; color:var(--accent)}
+  .equation{
+    font-family:"IBM Plex Mono",monospace; font-size:15px; background:var(--card);
+    border:1px solid var(--rule); border-left:3px solid var(--accent-2);
+    border-radius:3px; padding:16px 20px; margin:0 0 18px; overflow-x:auto;
+    color:var(--ink); line-height:1.5;
+  }
+
+  /* ---- figures ---- */
+  figure{margin:30px 0 34px; text-align:center}
+  figure img{
+    max-width:100%; height:auto; border:1px solid var(--rule);
+    border-radius:3px; background:#fff; padding:10px;
+    box-shadow:0 14px 34px -22px rgba(40,30,15,.45);
+  }
+  figcaption{
+    font-family:"Newsreader",serif; font-style:italic; font-size:15px;
+    color:var(--ink-soft); margin-top:12px; line-height:1.45; text-align:left;
+    padding-left:2px; max-width:62ch; margin-left:auto; margin-right:auto;
+  }
+  figcaption b{font-style:normal; font-family:"IBM Plex Mono",monospace;
+    font-size:12px; letter-spacing:.06em; color:var(--accent); text-transform:uppercase}
+
+  /* ---- experiment cards ---- */
+  .exp{
+    background:var(--card); border:1px solid var(--rule); border-radius:4px;
+    padding:26px 28px; margin:28px 0;
+  }
+  .exp h3.sub{margin-top:0}
+  .verdict{
+    display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:11px;
+    letter-spacing:.08em; text-transform:uppercase; padding:3px 10px; border-radius:20px;
+    margin-bottom:14px; font-weight:500;
+  }
+  .v-support{background:#dff0e6; color:#1d6b46; border:1px solid #b6dcc6}
+  .v-partial{background:#fbe7cf; color:#9a6312; border:1px solid #ecd2a0}
+  .v-overturn{background:#fadbd2; color:#a23a22; border:1px solid #eeb6a6}
+
+  /* ---- tables ---- */
+  .tbl-wrap{overflow-x:auto; margin:22px 0}
+  table{border-collapse:collapse; width:100%; font-size:15px;
+    font-family:"Newsreader",serif}
+  caption{caption-side:top; text-align:left; font-style:italic; color:var(--ink-soft);
+    font-size:15px; margin-bottom:10px}
+  th,td{text-align:left; padding:9px 14px; border-bottom:1px solid var(--rule-soft)}
+  thead th{
+    font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--faint); font-weight:500;
+    border-bottom:1.5px solid var(--ink); background:transparent;
+  }
+  tbody tr:hover{background:var(--paper-2)}
+  td.mononum{font-family:"IBM Plex Mono",monospace; font-size:13.5px}
+
+  /* ---- references ---- */
+  ol.refs{margin:0; padding-left:0; list-style:none; counter-reset:ref}
+  ol.refs li{
+    counter-increment:ref; position:relative; padding-left:34px; margin-bottom:14px;
+    font-size:16px; line-height:1.45; color:var(--ink-soft);
+  }
+  ol.refs li::before{
+    content:"["counter(ref)"]"; position:absolute; left:0; top:0;
+    font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--accent);
+  }
+
+  hr.rule{border:0; border-top:1px solid var(--rule); margin:34px 0}
+
+  footer.colophon{
+    max-width:var(--maxw); margin:60px auto 0; padding:30px 28px 0;
+    border-top:1px solid var(--rule);
+    font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.04em;
+    color:var(--faint); line-height:1.7;
+  }
+
+  @media (max-width:640px){
+    body{font-size:18px}
+    header.masthead{padding:60px 22px 30px}
+    .wrap{padding:0 22px 90px}
+    h2.sec{font-size:25px}
+  }
+  @media print{
+    body{background:#fff; font-size:11pt}
+    body::before{display:none}
+    nav.toc{break-inside:avoid}
+    .exp,figure,table{break-inside:avoid}
+    a{color:var(--ink)}
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <p class="kicker">Working paper &middot; Model v2</p>
+  <h1 class="title">Simulating a Post-Automation Economy</h1>
+  <p class="subtitle">An agent-based, stock-flow-consistent model with endogenous production, ownership structure, and wealth condensation.</p>
+  <div class="meta-row">
+    <span><b>Method</b> &nbsp;AB-SFC + task-based CES + kinetic condensation</span>
+    <span><b>Runs</b> &nbsp;12-seed Monte Carlo</span>
+    <span><b>Status</b> &nbsp;Experiment report</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#prior">Prior and related work</a></li>
+      <li><a href="#model">The model</a></li>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#experiments">Experiments and results</a></li>
+      <li><a href="#summary">Summary of findings</a></li>
+      <li><a href="#caveats">Caveats</a></li>
+      <li><a href="#refs">References</a></li>
+    </ol>
+  </nav>
+
+  <section id="overview">
+    <h2 class="sec"><span class="num">01</span>Overview</h2>
+    <p class="lead">This report documents the experiments run on the v2 model of an automating economy, in which artificial intelligence and robotics progressively shift income from labour to capital, the ownership of that capital may sit with households, the state, or abroad, and the state may fund a universal basic income (UBI) through taxation.</p>
+    <p>The central questions are whether a given taxation and ownership regime yields a stable outcome, who (if anyone) becomes insolvent, and how the distribution of wealth evolves. The model couples three layers: a stock-flow-consistent (SFC) accounting backbone that tracks every sector's balance sheet, a task-based constant-elasticity-of-substitution (CES) production block in which the capital share rises endogenously with automation, and a Bouchaud&ndash;Mezard kinetic engine that reproduces Pareto-tailed wealth condensation. Each experiment below tests one hypothesis; the design, the figure, the headline numbers, and the interpretation are given together.</p>
+    <p><strong>Reproducibility.</strong> All results come from 12-seed Monte Carlo runs. Two accounting invariants (the four sectors' deposits sum to zero; the sum of sector net worths equals real assets) hold to machine precision in every run. Level quantities are reported as a ratio to per-capita output, which is scale-free, because the automation transition raises the absolute scale of the economy substantially.</p>
+  </section>
+
+  <section id="prior">
+    <h2 class="sec"><span class="num">02</span>Prior and related work</h2>
+    <p>The model sits at the intersection of four literatures that have largely developed in isolation. The contribution is to combine them in one framework and use it for ownership and taxation experiments.</p>
+
+    <h3 class="sub">Automation and the factor distribution</h3>
+    <p>The task-based macroeconomics of automation provides the production side. Acemoglu and Restrepo (2022) model tasks allocated between labour and capital, with automation expanding the set of tasks performed by capital and displacing the workers who held a comparative advantage in them; they attribute a large share of the post-1980 rise in US wage inequality to this task displacement. The CES task block used here is the reduced macro form of that mechanism, with the capital share rising endogenously as automation proceeds.</p>
+    <p>The closest analytic antecedent for the wealth dimension is Moll, Rachel and Restrepo (2022), who link automation not just to wages but to the personal income and wealth distributions, and isolate the mechanism by which automation raises the return to capital. In their theory top-tail inequality depends on a return gap that generalises Piketty's <span class="mono">r &minus; g</span>, and accumulation at the top is governed by a random growth process. The present model shares that random-growth-and-return-gap core but replaces the tractable, near-representative closed form with an explicit agent population, adds stock-flow-consistent balance sheets, and makes ownership location and policy the object of experiment.</p>
+
+    <h3 class="sub">Kinetic wealth condensation</h3>
+    <p>The distributional engine comes from econophysics. Bouchaud and Mezard (2000) introduce a multiplicative exchange model whose stationary distribution has a Pareto tail and which undergoes a phase transition to condensation, noting that taxes and freer exchange reduce inequality. Burda and co-authors (2002) characterise the condensate in closed and open Pareto economies via a balls-in-boxes mechanism in which a finite fraction of wealth is amassed by a single agent, which is the source of the finite-population sensitivity of the very top share. Yakovenko and Rosser (2009) survey the broader statistical-mechanics-of-wealth programme.</p>
+
+    <h3 class="sub">Stock-flow-consistent and agent-based macro</h3>
+    <p>The accounting backbone follows the stock-flow-consistent tradition of Godley and Lavoie (2007), in which every flow has a source and a sink and every stock is one sector's asset and another's liability. Caiani and co-authors (2016) provide the benchmark agent-based stock-flow-consistent model that anchors the method, and the <span class="mono">sfctools</span> toolbox (Baldauf 2023) provides comparable open infrastructure.</p>
+    <p>The closest agent-based prior art is Carvalho and Di Guilmi (2019), a stock-flow-consistent agent-based model with endogenous credit and labour-saving technical change that studies technological unemployment and income inequality. The difference is one of object: their inequality emerges on the income and credit side, whereas the present model carries an explicit equity stock and drives concentration with a kinetic process on that stock, and treats the location of ownership (household, state, foreign) as a policy variable. Their model is, in turn, richer on endogenous credit, household debt and Minskian instability, none of which this version includes.</p>
+
+    <h3 class="sub">Optimal taxation of automation</h3>
+    <p>On the normative side, Guerreiro, Rebelo and Teles (2022) show in a quantitative model with endogenous skill choice that, under the current US tax system, a sustained fall in automation costs can produce a large rise in inequality, and that it is optimal to tax robots while the displaced routine workers remain in the labour force, with the optimal robot tax falling to zero once they retire. The present model is positive and experimental rather than optimal-tax, but its wealth-tax, robot-ownership and citizens'-fund experiments speak to the same policy question from a distributional-dynamics angle.</p>
+
+    <h3 class="sub">Open economy and profit repatriation</h3>
+    <p>The foreign-ownership dimension uses a rest-of-world balance-sheet sector, standard in open-economy stock-flow-consistent modelling. The empirical motivation is the scale of profit repatriation: Parnreiter, Steinw&auml;rder and Kolhoff (2024) estimate that transnational corporations repatriated about one trillion US dollars a year between 2005 and 2020, roughly 4.2% of the global stock of foreign direct investment, with net flows running centripetally towards a few high-income countries. This is the mechanism by which foreign ownership of automated capital erodes the domestic tax base while corporate tax still reaches the profit at source.</p>
+
+    <h3 class="sub">Contribution</h3>
+    <p>No existing work appears to combine, in a single stock-flow-consistent model used for policy experiments, all three of: automation-driven shifts in the factor distribution; an explicit ownership structure spanning households, the state, and foreign owners; and a kinetic wealth-condensation engine. Moll and co-authors come closest on mechanism but are near-representative and closed-economy, without an explicit ownership or foreign dimension or a citizens'-fund instrument. Carvalho and Di Guilmi come closest on method but focus on income and credit rather than the ownership of automated capital. That intersection is the contribution this prototype is built to explore.</p>
+  </section>
+
+  <section id="model">
+    <h2 class="sec"><span class="num">03</span>The model</h2>
+
+    <h3 class="sub">Sectors and invariants</h3>
+    <p>Four sectors carry balance sheets: households (a population of N agents), the firm or capital-owning sector, the government, and the rest of the world (RoW). Two asset classes circulate. Deposits are a liquid claim that, by double-entry construction, sum to zero across the four sectors. Equity represents claims on the firm's productive capital stock K, split at the outset between households, the state, and RoW. Because every flow is a matched transfer and every stock is one sector's asset and another's liability, two identities hold every period and are asserted in the test suite:</p>
+    <ul class="clean">
+      <li>the four sectors' deposit balances sum to zero;</li>
+      <li>the sum of all sector net worths equals real assets (capital plus the firm's inventories of unsold output).</li>
+    </ul>
+
+    <h3 class="sub">Production and factor prices</h3>
+    <p>Output is a CES aggregate of a labour-task bundle and a capital-task bundle:</p>
+    <div class="equation">Y = A &middot; [ (1 &minus; I)^(1/e) &middot; (A_L L)^((e&minus;1)/e) &nbsp;+&nbsp; I^(1/e) &middot; (A_K K)^((e&minus;1)/e) ]^(e/(e&minus;1))</div>
+    <p>Here <span class="mono">I &isin; [0,1]</span> is the automation index, interpreted as the share of tasks performed by capital, and <span class="mono">e</span> is the elasticity of substitution between the two bundles. Factor prices are marginal products, so the wage bill and capital income sum exactly to output (Euler's theorem). The capital share <span class="mono">pi = capital_income / Y</span> therefore rises endogenously as automation raises I, rather than being imposed. The net return on capital is <span class="mono">r = (capital_income / K) &minus; depreciation</span>, and the capital growth rate g is endogenous through investment. This makes the r-versus-g margin, central to fiscal sustainability, an output of the model rather than an assumption.</p>
+    <p>Investment is behavioural: firms invest to close the gap between the net return r and a required return, plus replacement of depreciation. This disciplines accumulation so capital does not run away when the marginal product is temporarily high. The no-automation baseline is a verified stationary equilibrium (r equals the required return and g is zero).</p>
+
+    <h3 class="sub">Distribution, ownership, and policy</h3>
+    <p>Wealth condenses through two channels. Equity income (dividends and booked retained earnings) accrues pro-rata to equity already held, so wealth begets wealth. On top of this, a conservative Bouchaud&ndash;Mezard kernel reshuffles household equity each period, producing a Pareto tail with exponent <span class="mono">alpha = 1 + 2J/sigma&sup2;</span>. An optional coupling (parameter <span class="mono">kappa</span>) lets the kinetic noise scale with the capital share, so automation can drive the <em>speed</em> of condensation, not just its level.</p>
+    <p>Policy instruments include a corporate tax, a flat or progressive personal income tax, a wealth tax (levied on the stock and split into an equity leg that transfers ownership to the state and a cash leg that is ordinary revenue), a per-capita UBI, and a government running cost. Ownership can be assigned to households, the state (whose dividends may be kept or rebated per capita as a citizens' fund), or RoW (whose dividends and retained earnings are repatriated abroad).</p>
+
+    <h3 class="sub">Baseline calibration</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="mononum">N</td><td class="mononum">2000</td><td>number of household agents</td></tr>
+        <tr><td class="mononum">periods</td><td class="mononum">300</td><td>simulation length</td></tr>
+        <tr><td class="mononum">eps (e)</td><td class="mononum">0.6</td><td>elasticity of substitution between task bundles</td></tr>
+        <tr><td class="mononum">I_base</td><td class="mononum">0.50</td><td>capital-task share before the AI ramp (gives pi &approx; 0.23)</td></tr>
+        <tr><td class="mononum">auto_max</td><td class="mononum">0.45</td><td>ramp adds up to this, so I rises 0.50 &rarr; ~0.95</td></tr>
+        <tr><td class="mononum">auto_start / speed</td><td class="mononum">80 / 0.06</td><td>logistic ramp midpoint and steepness</td></tr>
+        <tr><td class="mononum">depreciation</td><td class="mononum">0.05</td><td>capital depreciation per period</td></tr>
+        <tr><td class="mononum">r_required</td><td class="mononum">0.04</td><td>required net return; investment closes the gap to it</td></tr>
+        <tr><td class="mononum">div_payout</td><td class="mononum">0.6</td><td>share of after-tax profit paid as dividends</td></tr>
+        <tr><td class="mononum">c_income / c_wealth</td><td class="mononum">0.80 / 0.03</td><td>consumption out of income and out of net worth</td></tr>
+        <tr><td class="mononum">phi_equity</td><td class="mononum">0.5</td><td>share of saving households try to place in equity</td></tr>
+        <tr><td class="mononum">bm_J / bm_sigma</td><td class="mononum">0.10 / 0.55</td><td>kinetic mean-reversion and noise (tail alpha &approx; 1.66)</td></tr>
+        <tr><td class="mononum">kappa</td><td class="mononum">0.0 / 1.0</td><td>coupling of kinetic noise to the capital share (off / on)</td></tr>
+        <tr><td class="mononum">gov_cost / r_debt</td><td class="mononum">0.10 / 0.02</td><td>government running cost; interest on balances</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="method">
+    <h2 class="sec"><span class="num">04</span>Method</h2>
+    <p>Each experiment fixes the baseline calibration and varies one lever (a tax instrument, an ownership share, the elasticity, the automation ceiling, or the timing of intervention). Outcomes are read at the end of the 300-period horizon, averaged over the final 40 periods for distributional metrics and taken as the terminal value for stocks, then averaged across 12 random seeds. The metrics are the wealth Gini, the top one per cent wealth share, the labour share of output, government net worth (scaled by output), and rest-of-world net worth (scaled by output, the measure of wealth leakage).</p>
+  </section>
+
+  <section id="experiments">
+    <h2 class="sec"><span class="num">05</span>Experiments and results</h2>
+
+    <div class="exp">
+      <h3 class="sub">H1 &middot; Fiscal sustainability</h3>
+      <span class="verdict v-support">Supported (refined)</span>
+      <p><span class="tag">Hypothesis</span>With endogenous r and g, a UBI funded purely by flow taxes (income and corporate) becomes fiscally fragile as automation proceeds, while stock instruments or state equity restore solvency.</p>
+      <p><span class="tag">Design</span>Experiment 1 runs all seven regimes over the transition and reads terminal government net worth off the balance sheet. Experiment 3 sweeps the required return (which shifts the steady-state interest rate) and compares the income-tax and wealth-tax regimes.</p>
+      <figure>
+        <img src="__IMG_exp1_scenarios.png__" alt="Scenario comparison: Gini, top 1% share, government net worth, labour share">
+        <figcaption><b>Figure 1</b> Scenario comparison over the automation transition: wealth Gini, top 1% share, government net worth relative to output, and labour share. Twelve-seed representative trajectories.</figcaption>
+      </figure>
+      <figure>
+        <img src="__IMG_exp3_rg.png__" alt="Endogenous r and g over the transition">
+        <figcaption><b>Figure 2</b> Endogenous net return r and capital growth rate g over the transition: a capital-deepening boom that relaxes back to the required return.</figcaption>
+      </figure>
+      <p><span class="tag">Results</span>In the lower-left panel of Figure 1, laissez-faire is the only regime whose government net worth turns and stays negative (about &minus;111 times output), funding its running cost on debt at r greater than g. Every taxed regime accumulates a positive state asset base. Experiment 3 shows the wealth-tax regime gains most from a higher steady-state return: at a required return of 0.06 it reaches government net worth of 263 times output versus 176 for income tax.</p>
+      <p><span class="tag">Interpretation</span>The hypothesis holds, with a refinement: aggregate insolvency is really a property of the untaxed economy, since any redistributive regime here is solvent. The sharper point is that the wealth tax is simultaneously the most equal and the most solvent regime, because it converts the high transitional return on capital into a durable state asset stream.</p>
+    </div>
+
+    <div class="exp">
+      <h3 class="sub">H2 &middot; Distribution and the speed of condensation</h3>
+      <span class="verdict v-support">Supported</span>
+      <p><span class="tag">Hypothesis</span>Wealth condensation is governed by stock instruments and portfolio composition, not flow taxes; and once the kinetic noise is coupled to the capital share, the speed of condensation rises with automation.</p>
+      <p><span class="tag">Design</span>Experiment 1 compares Gini and top-share paths across regimes (Figure 1). Experiment 2 switches the coupling on (kappa = 1) and sweeps the automation ceiling, recording the terminal Gini and t_half, the time to reach the halfway point of the rise.</p>
+      <figure>
+        <img src="__IMG_exp2_speed.png__" alt="Coupled model: concentration speed vs automation level">
+        <figcaption><b>Figure 3</b> Coupled model: deeper automation produces both higher and faster wealth condensation.</figcaption>
+      </figure>
+      <p><span class="tag">Results</span>In Figure 1 the laissez-faire, income-tax, state-ownership, citizens'-fund and foreign-ownership regimes all settle around a Gini of 0.53 to 0.58, while only the wealth tax (to 0.054) and progressive wealth tax (to 0.006) bend down. Figure 3 shows the speed result: as the automation ceiling rises, the terminal Gini climbs (0.60, 0.69, 0.74, 0.77) and t_half falls (93, 85, 75, 71).</p>
+      <p><span class="tag">Interpretation</span>Both parts hold. The level result reproduces the earlier finding under endogenous output: concentration lives in the equity stock, which only a stock instrument reaches. The speed result is the new contribution: tying the concentration engine to the capital share makes automation a rate driver, so deeper automation brings inequality sooner as well as higher.</p>
+    </div>
+
+    <div class="exp">
+      <h3 class="sub">H3 &middot; Foreign ownership and the tax base</h3>
+      <span class="verdict v-support">Supported</span>
+      <p><span class="tag">Hypothesis</span>Foreign ownership of the automated capital erodes the domestic personal-tax base while corporate tax still reaches the profit at source, shifting the fiscal frontier adversely.</p>
+      <p><span class="tag">Design</span>Experiment 5 sweeps the rest-of-world ownership share from 0 to 0.8, holding the tax regime fixed, and tracks both repatriated wealth (RoW net worth) and government net worth.</p>
+      <figure>
+        <img src="__IMG_exp5_foreign.png__" alt="Foreign ownership: leakage and fiscal erosion">
+        <figcaption><b>Figure 4</b> Foreign ownership: repatriated wealth rises and government net worth falls roughly linearly with the foreign share.</figcaption>
+      </figure>
+      <p><span class="tag">Results</span>Rest-of-world net worth rises almost linearly with the foreign share, from 0 to about 92 times output at an 80% foreign share, while government net worth falls in step from 164 to 140.</p>
+      <p><span class="tag">Interpretation</span>The hypothesis holds. The asymmetry is the point: dividends and retained earnings on foreign-held equity leave the country, shrinking the personal income and wealth bases, while corporate tax still reaches the profit. Foreign ownership is therefore a slow fiscal drain that personal-tax instruments cannot stop, which is the structural case for domestic-ownership requirements or source-based capital taxation.</p>
+    </div>
+
+    <div class="exp">
+      <h3 class="sub">H4 &middot; The buyer-collapse channel &mdash; a reversal</h3>
+      <span class="verdict v-overturn">Overturned</span>
+      <p><span class="tag">Hypothesis</span>Once labour income vanishes under automation, households can no longer buy into the automated capital, so ownership can only broaden through non-market transfer.</p>
+      <p><span class="tag">Design</span>Experiment 6 switches on endogenous portfolio choice (households buy newly issued equity out of saving at book value) and tracks household equity purchases against the wage and net investment over the transition.</p>
+      <figure>
+        <img src="__IMG_exp6_buyer.png__" alt="Equity purchases collapse but wages rise">
+        <figcaption><b>Figure 5</b> Equity purchases peak then collapse, but the wage per efficiency unit rises rather than falls: the collapse tracks the end of the investment boom, not affordability.</figcaption>
+      </figure>
+      <p><span class="tag">Results</span>Household equity purchases peak (around period 149) then collapse to zero. But the wage per efficiency unit rises over the transition rather than falling: with endogenous capital deepening the boom lifts labour in absolute terms even as the labour share falls. The purchase collapse is driven by net investment demand ending, not by households being priced out.</p>
+      <p><span class="tag">Interpretation</span>This is the hypothesis the model overturned, and it is the most instructive result. The original intuition (workers too poor to buy the robots) was an artefact of exogenous output. Once production and accumulation are endogenous, automation makes everyone absolutely richer, and wealth concentrates through the return channel (equity begets equity), not through an affordability barrier to entry. Endogenising production changed the answer, which is precisely why it was worth doing.</p>
+    </div>
+
+    <div class="exp">
+      <h3 class="sub">H5 &middot; The policy frontier</h3>
+      <span class="verdict v-partial">Partly supported</span>
+      <p><span class="tag">Hypothesis</span>A citizens' wealth fund (the state holds equity as custodian and rebates its dividends per capita) dominates both income-tax UBI and pure nationalisation on a joint inequality-and-solvency criterion.</p>
+      <p><span class="tag">Design</span>Experiment 7 plots every regime in (Gini, government net worth) space, so dominance can be read directly.</p>
+      <figure>
+        <img src="__IMG_exp7_frontier.png__" alt="Policy frontier: inequality vs solvency">
+        <figcaption><b>Figure 6</b> Policy frontier: lower-left is more equal, higher is more solvent. The stock taxes occupy the desirable corner; laissez-faire is alone in the insolvent quadrant.</figcaption>
+      </figure>
+      <p><span class="tag">Results</span>The progressive wealth tax (Gini 0.006, government net worth 235 times output) and flat wealth tax (0.054, 212) occupy the desirable corner. Laissez-faire is alone in the insolvent quadrant. The citizens' fund lands at (0.530, 60): lower inequality than state-keep (0.536), but the lowest solvency of the taxed regimes because it pays its dividends back out.</p>
+      <p><span class="tag">Interpretation</span>Only partly supported. The fund beats income-tax UBI on inequality and beats laissez-faire on both axes, but it does not dominate the wealth-tax regimes and explicitly trades solvency for equality. The genuinely dominant policies are the stock taxes; the fund is best read as a distributional instrument that keeps the state lean rather than a free lunch on both axes.</p>
+    </div>
+
+    <div class="exp">
+      <h3 class="sub">H6 &middot; Intervention timing and hysteresis</h3>
+      <span class="verdict v-support">Supported strongly</span>
+      <p><span class="tag">Hypothesis</span>Condensation exhibits hysteresis, so intervening late is materially more costly than intervening early, for the same final policy.</p>
+      <p><span class="tag">Design</span>Experiment 8 runs the coupled model and switches on a 3% wealth tax at four onset periods (60, 110, 160, 210), then compares terminal Ginis.</p>
+      <figure>
+        <img src="__IMG_exp8_timing.png__" alt="Intervention timing and hysteresis">
+        <figcaption><b>Figure 7</b> The later the wealth tax is introduced, the higher the peak inequality reached and the higher the terminal Gini; the latest case does not fully recover within the horizon.</figcaption>
+      </figure>
+      <p><span class="tag">Results</span>Terminal Gini rises sharply with delay: 0.006 (onset 60), 0.022 (110), 0.081 (160), 0.281 (210). The later the intervention, the higher the peak the Gini reaches before the tax bites and the longer the clawback.</p>
+      <p><span class="tag">Interpretation</span>The hypothesis holds strongly. Concentrated equity that has already compounded is harder to redistribute than equity caught before it concentrates, so the cost of waiting is convex. Timing a wealth tax relative to the automation wave matters as much as its rate, an argument for acting before condensation rather than after.</p>
+    </div>
+
+    <h3 class="sub">Robustness (finite size)</h3>
+    <p>A finite-size sweep confirms the Gini is converged from N = 250 (0.550) to N = 4000 (0.551), while the sampling noise in the top one per cent share falls from 7.1 to 1.9 points as N rises. N = 2000 is therefore adequate for the aggregate metrics, with seed replication handling the residual tail noise.</p>
+    <div class="tbl-wrap">
+    <table>
+      <caption>End-of-horizon metrics by population size (12 seeds each).</caption>
+      <thead><tr><th>N</th><th>Gini (mean)</th><th>Gini (sd)</th><th>top 1% (mean)</th><th>top 1% (sd)</th></tr></thead>
+      <tbody>
+        <tr><td class="mononum">250</td><td class="mononum">0.550</td><td class="mononum">0.033</td><td class="mononum">19.2%</td><td class="mononum">7.11</td></tr>
+        <tr><td class="mononum">500</td><td class="mononum">0.547</td><td class="mononum">0.020</td><td class="mononum">18.0%</td><td class="mononum">4.35</td></tr>
+        <tr><td class="mononum">1000</td><td class="mononum">0.546</td><td class="mononum">0.017</td><td class="mononum">18.2%</td><td class="mononum">4.05</td></tr>
+        <tr><td class="mononum">2000</td><td class="mononum">0.543</td><td class="mononum">0.010</td><td class="mononum">17.5%</td><td class="mononum">2.13</td></tr>
+        <tr><td class="mononum">4000</td><td class="mononum">0.551</td><td class="mononum">0.009</td><td class="mononum">19.5%</td><td class="mononum">1.85</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="summary">
+    <h2 class="sec"><span class="num">06</span>Summary of findings</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Hypothesis</th><th>Verdict</th><th>Key result</th></tr></thead>
+      <tbody>
+        <tr><td>H1 &middot; fiscal sustainability</td><td>Supported (refined)</td><td>Only the untaxed economy is insolvent; the wealth tax is both most equal and most solvent.</td></tr>
+        <tr><td>H2 &middot; distribution and speed</td><td>Supported</td><td>Flow taxes leave the Gini near 0.57; stock taxes collapse it; coupling makes condensation faster under deeper automation.</td></tr>
+        <tr><td>H3 &middot; foreign ownership</td><td>Supported</td><td>Leakage and fiscal erosion rise linearly with the foreign share; corporate tax alone reaches the profit.</td></tr>
+        <tr><td>H4 &middot; buyer collapse</td><td>Overturned</td><td>Endogenous capital deepening raises wages absolutely, so concentration is via returns, not an affordability barrier.</td></tr>
+        <tr><td>H5 &middot; citizens' fund dominance</td><td>Partly supported</td><td>The fund helps but does not dominate the stock taxes; it trades solvency for equality.</td></tr>
+        <tr><td>H6 &middot; timing and hysteresis</td><td>Supported strongly</td><td>Terminal Gini rises from 0.006 to 0.281 as intervention is delayed; the cost of waiting is convex.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="caveats">
+    <h2 class="sec"><span class="num">07</span>Caveats</h2>
+    <ul class="clean">
+      <li>Transition magnitudes are large (per-capita output rises about 250-fold) because gross capital deepening compounds over a long horizon; all headline results are reported in shares, ratios and Gini, which are scale-free.</li>
+      <li>Equity is valued at book (no market price or capital gains); a market-clearing price is a planned extension.</li>
+      <li>The kinetic concentration channel is coupled to the economy only through the parameter kappa; a fully endogenous return-dispersion process is the natural next modelling step.</li>
+      <li>A formal eigenvalue stability analysis of the deterministic skeleton is specified but not yet implemented; stability is currently read off trajectories and the verified stationary baseline.</li>
+    </ul>
+  </section>
+
+  <section id="refs">
+    <h2 class="sec"><span class="num">08</span>References</h2>
+    <ol class="refs">
+      <li>Acemoglu, D. and Restrepo, P. (2022). Tasks, Automation, and the Rise in U.S. Wage Inequality. <em>Econometrica</em>, 90(5), 1973&ndash;2016.</li>
+      <li>Baldauf, T. (2023). sfctools: A toolbox for stock-flow consistent, agent-based models. <em>Journal of Open Source Software</em>, 8(87), 4980.</li>
+      <li>Bouchaud, J.-P. and Mezard, M. (2000). Wealth condensation in a simple model of economy. <em>Physica A</em>, 282, 536&ndash;545.</li>
+      <li>Burda, Z., Johnston, D., Jurkiewicz, J., Kaminski, M., Nowak, M. A., Papp, G. and Zahed, I. (2002). Wealth condensation in Pareto macroeconomies. <em>Physical Review E</em>, 65, 026102.</li>
+      <li>Caiani, A., Godin, A., Caverzasi, E., Gallegati, M., Kinsella, S. and Stiglitz, J. E. (2016). Agent based-stock flow consistent macroeconomics: Towards a benchmark model. <em>Journal of Economic Dynamics and Control</em>, 69, 375&ndash;408.</li>
+      <li>Carvalho, L. and Di Guilmi, C. (2019). Technological unemployment and income inequality: a stock-flow consistent agent-based approach. <em>Journal of Evolutionary Economics</em>, 29, 39&ndash;73.</li>
+      <li>Godley, W. and Lavoie, M. (2007). <em>Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth.</em> Palgrave Macmillan.</li>
+      <li>Guerreiro, J., Rebelo, S. and Teles, P. (2022). Should Robots Be Taxed? <em>The Review of Economic Studies</em>, 89(1), 279&ndash;311.</li>
+      <li>Moll, B., Rachel, L. and Restrepo, P. (2022). Uneven Growth: Automation's Impact on Income and Wealth Inequality. <em>Econometrica</em>, 90(6), 2645&ndash;2683.</li>
+      <li>Parnreiter, C., Steinw&auml;rder, L. and Kolhoff, K. (2024). Uneven Development through Profit Repatriation: How Capitalism's Class and Geographical Antagonisms Intertwine. <em>Antipode</em>, 56(6), 2343&ndash;2367.</li>
+      <li>Yakovenko, V. M. and Rosser, J. B. (2009). Colloquium: Statistical Mechanics of Money, Wealth, and Income. <em>Reviews of Modern Physics</em>, 81, 1703&ndash;1725.</li>
+    </ol>
+  </section>
+
+</div>
+
+<footer class="colophon">
+  Post-automation economy &middot; model v2 &middot; agent-based stock-flow-consistent simulation<br>
+  Two accounting invariants verified to machine precision &middot; 40 passing tests &middot; figures from 12-seed Monte Carlo runs
+</footer>
+
+</body>
+</html>

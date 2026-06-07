@@ -1,0 +1,72 @@
+
+==============================================================================
+EXPERIMENT A  Behavioural policy frontier (items 1+2+4), 10 seeds
+==============================================================================
+scenario                            Gini         top1%    gov_nw/Y  foreign sh
+laissez_faire            0.626[0.60,0.65]   24.1%         0.0        0.0%
+income_tax_ubi           0.577[0.56,0.60]   19.8%         6.0        0.0%
+wealth_tax_ubi           0.148[0.14,0.15]    4.4%         4.8        0.8%
+wealth_tax_frictionless  0.150[0.14,0.16]    4.5%         5.0        0.0%
+progressive_wealth       0.165[0.16,0.17]    4.8%         6.5        1.0%
+state_ownership          0.480[0.47,0.50]    3.3%      -430.0        0.0%
+citizens_fund            0.478[0.47,0.50]    3.3%      -440.5        0.0%
+foreign_ownership        0.577[0.56,0.60]   19.8%         6.0        0.0%
+
+==============================================================================
+EXPERIMENT B  Decomposing the wealth-tax behavioural response
+==============================================================================
+variant                          Gini    top1%  foreign sh  tax base
+frictionless                    0.150     4.5%        0.0%     1.000
+avoidance only                  0.150     4.4%        0.0%     0.985
+mobility only                   0.149     4.4%        0.8%     1.000
+both (baseline)                 0.148     4.4%        0.8%     0.985
+
+==============================================================================
+EXPERIMENT C  Concentration from heterogeneous returns (item 2)
+==============================================================================
+ ret_sigma  final Gini    top1%   top10%
+      0.03       0.438    12.0%    35.3%
+      0.05       0.626    24.1%    52.7%
+      0.07       0.752    39.3%    67.7%
+
+==============================================================================
+EXPERIMENT D  Deterministic-skeleton stability (item 5)
+==============================================================================
+Local slope dK'/dK of the aggregate capital map (|.| < 1 => stable real
+economy). The financial debt root = 1 + r_debt is reported separately.
+scenario                I=0.3    I=0.5    I=0.7    I=0.9
+laissez_faire           0.929    0.934    0.941    0.948
+income_tax_ubi          0.917    0.926    0.962    0.966
+wealth_tax_ubi          0.975    0.911    0.939    0.950
+state_ownership         0.975    0.935    0.941    0.951
+foreign_ownership       0.942    0.942    0.956    0.959
+All real slopes < 1: the real economy is locally stable at every
+automation level (consistent with global convergence of K/Y from any
+initial capital). Separately, the government/RoW deposit block carries a
+structural root at 1 + r_debt = 1.020: with a persistent primary
+deficit, public debt is on an explosive r>g path. Real stability and
+fiscal solvency are thus distinct questions, the formal form of H1.
+expD_stability.png written (real slopes all < 1)
+
+==============================================================================
+EXPERIMENT F  Source taxation of foreign-owned automation income
+==============================================================================
+Source tax on foreign owners' attributed capital income, rebated to
+residents. Foreign-ownership scenario (60% foreign initially).
+ tax_repat  rev/Y (transition)  foreign<5% at t  term Gini  term gov_nw/Y
+      0.00               0.00%              171      0.577           6.01
+      0.25               0.04%              130      0.577           6.01
+      0.50               0.04%              113      0.577           6.01
+expF_repatriation.png written
+Reading: a source tax raises little long-run revenue and leaves the
+terminal Gini and solvency unchanged, because domestic savers and the
+state buy out the foreign stake regardless; its effect is to ACCELERATE
+that domestication (the foreign share crosses 5% sooner the higher the
+rate). It is a transition instrument, not a permanent distributional one,
+conditional on the model's dilution dynamics; under structurally
+persistent foreign ownership it would be the only lever reaching foreign
+owners and its effects would persist.
+expE_sensitivity.png written (N=64, top Gini driver: ret_sigma)
+  behavioural-parameter total Sobol indices on terminal Gini (N=64):
+    avoidance_elasticity   ST=0.132  S1=0.106
+    migration_semi_elast   ST=0.102  S1=-0.014

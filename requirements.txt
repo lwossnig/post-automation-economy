@@ -1,0 +1,8 @@
+# Core numerical / simulation stack for the AB-SFC automation-economy model.
+# Pinned to the lower bounds the code was developed and verified against;
+# newer versions in the same major line are expected to work.
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+SALib>=1.4          # Sobol global sensitivity analysis (abm_sfc/sensitivity.py)
+pytest>=7.0         # test suite (tests/)

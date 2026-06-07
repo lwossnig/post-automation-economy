@@ -1,0 +1,79 @@
+<svg viewBox="0 0 760 700" xmlns="http://www.w3.org/2000/svg" font-family="'Spectral',Georgia,serif">
+  <defs>
+    <style>
+      .ttl{font-family:'Fraunces',Georgia,serif;font-weight:600;}
+      .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+      .body{font-family:'Spectral',Georgia,serif;}
+    </style>
+  </defs>
+
+  <!-- card -->
+  <rect x="1" y="1" width="758" height="698" rx="14" fill="#fbf7ee" stroke="#ddd2bd" stroke-width="1.5"/>
+
+  <!-- header -->
+  <text x="40" y="46" class="mono" font-size="12.5" style="letter-spacing:2.4px" fill="#7c2d12">THE CENTRAL FINDING</text>
+  <text x="40" y="84" class="ttl" font-size="31" fill="#23201b">Five ways to tax AI.</text>
+  <text x="40" y="120" class="ttl" font-size="31" fill="#1d4e44">Only two reach the rent.</text>
+  <text x="40" y="152" class="body" font-size="16" fill="#5b554a">The durable money in AI leaves the country as a licence fee.</text>
+  <text x="40" y="174" class="body" font-size="16" fill="#5b554a">Most of the taxes on the table never touch it.</text>
+
+  <!-- ============ ROW 1: Robot tax (amber, misses) ============ -->
+  <g>
+    <rect x="40" y="206" width="5" height="64" rx="2.5" fill="#c2956b"/>
+    <text x="62" y="230" class="ttl" font-size="21" fill="#23201b">Robot tax</text>
+    <text x="62" y="250" class="mono" font-size="11.5" style="letter-spacing:1.6px" fill="#5b554a">TAXES THE PHYSICAL ROBOTS</text>
+    <text x="62" y="270" class="body" font-style="italic" font-size="14.5" fill="#5b554a">Collects on the robots. The rent rides on the model, not the metal.</text>
+    <rect x="572" y="222" width="148" height="32" rx="16" fill="#efe6d3"/>
+    <text x="646" y="243" class="mono" font-size="12.5" font-weight="500" style="letter-spacing:1.5px" fill="#8a6a25" text-anchor="middle">✗  MISSES</text>
+  </g>
+  <line x1="40" y1="292" x2="720" y2="292" stroke="#ddd2bd" stroke-width="1"/>
+
+  <!-- ============ ROW 2: Token / compute tax (red, misses) ============ -->
+  <g>
+    <rect x="40" y="298" width="5" height="64" rx="2.5" fill="#a8443a"/>
+    <text x="62" y="322" class="ttl" font-size="21" fill="#23201b">Token or compute tax</text>
+    <text x="62" y="342" class="mono" font-size="11.5" style="letter-spacing:1.6px" fill="#5b554a">TAXES USAGE OR HARDWARE</text>
+    <text x="62" y="362" class="body" font-style="italic" font-size="14.5" fill="#5b554a">Redefinable, and per-unit prices keep falling. It taxes less each year.</text>
+    <rect x="572" y="314" width="148" height="32" rx="16" fill="#f3e0db"/>
+    <text x="646" y="335" class="mono" font-size="12.5" font-weight="500" style="letter-spacing:1.5px" fill="#a8443a" text-anchor="middle">✗  MISSES</text>
+  </g>
+  <line x1="40" y1="384" x2="720" y2="384" stroke="#ddd2bd" stroke-width="1"/>
+
+  <!-- ============ ROW 3: Corporation tax (red, misses) ============ -->
+  <g>
+    <rect x="40" y="390" width="5" height="64" rx="2.5" fill="#a8443a"/>
+    <text x="62" y="414" class="ttl" font-size="21" fill="#23201b">Corporation tax</text>
+    <text x="62" y="434" class="mono" font-size="11.5" style="letter-spacing:1.6px" fill="#5b554a">TAXES DOMESTIC PROFIT</text>
+    <text x="62" y="454" class="body" font-style="italic" font-size="14.5" fill="#5b554a">The rent leaves first, as a deductible licence fee it never sees.</text>
+    <rect x="572" y="406" width="148" height="32" rx="16" fill="#f3e0db"/>
+    <text x="646" y="427" class="mono" font-size="12.5" font-weight="500" style="letter-spacing:1.5px" fill="#a8443a" text-anchor="middle">✗  MISSES</text>
+  </g>
+
+  <!-- group divider -->
+  <line x1="40" y1="486" x2="720" y2="486" stroke="#1d4e44" stroke-width="1.4" stroke-dasharray="2 4" opacity="0.55"/>
+  <text x="720" y="481" class="mono" font-size="11" style="letter-spacing:1.8px" fill="#1d4e44" text-anchor="end">LEVIED AT SOURCE ↓</text>
+
+  <!-- ============ ROW 4: Digital-services levy (teal, reaches) ============ -->
+  <g>
+    <rect x="40" y="500" width="5" height="64" rx="2.5" fill="#1d4e44"/>
+    <text x="62" y="524" class="ttl" font-size="21" fill="#23201b">Digital-services levy</text>
+    <text x="62" y="544" class="mono" font-size="11.5" style="letter-spacing:1.6px" fill="#5b554a">TAXES AI VALUE AT SOURCE</text>
+    <text x="62" y="564" class="body" font-style="italic" font-size="14.5" fill="#5b554a">Hits the value earned locally, before it can leave the country.</text>
+    <rect x="572" y="516" width="148" height="32" rx="16" fill="#dceae3"/>
+    <text x="646" y="537" class="mono" font-size="12.5" font-weight="500" style="letter-spacing:1.5px" fill="#1d4e44" text-anchor="middle">✓  REACHES</text>
+  </g>
+  <line x1="40" y1="586" x2="720" y2="586" stroke="#ddd2bd" stroke-width="1"/>
+
+  <!-- ============ ROW 5: Cross-border withholding (teal, reaches) ============ -->
+  <g>
+    <rect x="40" y="592" width="5" height="64" rx="2.5" fill="#1d4e44"/>
+    <text x="62" y="616" class="ttl" font-size="21" fill="#23201b">Cross-border withholding</text>
+    <text x="62" y="636" class="mono" font-size="11.5" style="letter-spacing:1.6px" fill="#5b554a">TAXES THE RENT LEAVING</text>
+    <text x="62" y="656" class="body" font-style="italic" font-size="14.5" fill="#5b554a">Catches the licence fee at the border, on the way out.</text>
+    <rect x="572" y="608" width="148" height="32" rx="16" fill="#dceae3"/>
+    <text x="646" y="629" class="mono" font-size="12.5" font-weight="500" style="letter-spacing:1.5px" fill="#1d4e44" text-anchor="middle">✓  REACHES</text>
+  </g>
+
+  <!-- takeaway -->
+  <text x="380" y="686" class="ttl" font-style="italic" font-size="16.5" fill="#1d4e44" text-anchor="middle">The rent leaves as a licence fee. Only a tax at the source stands in its path.</text>
+</svg>
