@@ -154,6 +154,28 @@ providers, whereas the model is framed for a host that imports the AI
 rent (read the United Kingdom). That difference turns out to matter for
 whether the territoriality objection bites.
 
+A word on what kind of claim this is, to pre-empt the obvious objection
+that the direction is already known. The model does not claim to
+discover that an AI rent shifts income towards capital, or that a
+foreign-held rent leaks abroad: the rent is an \emph{input} to the
+model, a calibrated assumption, not a \emph{finding} from it. Its value
+lies in four things a verbal argument cannot supply. It puts magnitudes
+and a ranking on instruments that all sound plausible in prose, so that
+``tax the rent\textquotesingle\textquotesingle{} becomes the sharper
+claim that a source levy reaches a durable surplus an ordinary corporate
+or robot tax misses almost entirely. It adjudicates the cases where the
+intuitions genuinely point both ways, as with the territorial objection,
+which turns out to bite for the provider\textquotesingle s home and not
+for the rent\textquotesingle s host. It tracks compounding, the slow
+accumulation of a reinvested rent into majority foreign ownership of the
+capital stock, which no static argument surfaces. And it enforces
+consistency, holding the stock-flow accounts and the factor-market
+closure together so that a policy cannot be credited with revenue it
+could not raise or a public balance sheet it could not sustain. The
+contribution is therefore the quantified ranking and the conditions
+under which it flips, not the sign of the first derivative, which is
+assumed.
+
 Because that difference is the organising idea of the paper, we make it
 explicit by separating two regimes. In the first the AI is owned at
 home, the case of the United States, where providers such as OpenAI and
@@ -2140,6 +2162,15 @@ hardware (low \texttt{s\_home}) the take is unchanged, because the rent is paid 
 capital-good price wherever the box physically sits. So the stacked rent both deepens
 the importer\textquotesingle s predicament and adds a surplus that the paper\textquotesingle s
 own reaching instruments miss, unless the host reaches for a border or usage tax.
+It is worth being explicit that this reinforces the paper\textquotesingle s conclusion
+rather than threatening it: a second, hardware-embedded foreign rent makes the durable
+surplus larger and the ownership drift faster, so the case for reaching the rent early
+is stronger, not weaker. What it qualifies is the \emph{sufficiency} of the recommended
+instrument, not its \emph{direction}; the digital levy and the withholding remain the
+right tools for the licence rent, and the compute rent simply adds a border or usage
+instrument alongside them. The point belongs in the limitations as future work (a fuller
+treatment would give the two rents independent persistence and an up-front capex form),
+but the direction of the headline result is untouched.
 
 \emph{For Britain concretely:} a rent-importer that taxes the model rent with a digital
 levy still leaks the chip rent embedded in every GPU it imports, and onshoring the data
@@ -2183,6 +2214,24 @@ share; it shows that the dramatic bottleneck-wage spike in the headline model is
 artefact of inelastic supply, and that the reassurance ``the workers doing what AI
 cannot will be paid handsomely\textquotesingle\textquotesingle{} is fragile once that
 labour is abundant.
+
+The general lesson is that the wage outcome turns entirely on what the
+remaining human task is, and the headline result is one of three cases,
+not the generic one. Where the bottleneck labour is paid its marginal
+product in genuinely \emph{fixed} supply, as in the headline model, its
+wage rises in level even as the labour share falls; this is the
+comforting reading. But that is the knife-edge. Where the task is one
+\emph{any} worker can do, the elastic-supply case above shows the
+scarcity premium competes away and the surplus accrues to capital rather
+than to labour. And where it is instead a genuinely \emph{scarce},
+hard-to-acquire skill that only a few hold, the premium survives but is
+captured by a narrow wage elite rather than by labour at large. So
+``automation raises wages\textquotesingle\textquotesingle{} holds broadly
+only under fixed supply; the two generic outcomes are a return to capital
+or a within-labour concentration, both of which sharpen rather than
+soften the distributional story the rest of the paper tells. The level
+claim should be read with this qualification throughout, and it is
+foregrounded again among the caveats.
 
 \begin{figure}[htbp]
 \centering
@@ -2502,8 +2551,17 @@ Only a digital-services-style levy on AI revenue, or a withholding on
 the rent as it is repatriated, touches the surplus. If the UK wants the
 automation transition to fund anything, the levy on AI value (in the
 spirit of the existing digital-services tax, which already taxes revenue
-precisely because revenue resists shifting) is the load-bearing
-instrument, and the robot tax is a useful complement rather than the
+precisely because revenue resists shifting)\footnote{The instrument the
+model recommends is best read as a widened, AI-scoped levy rather than
+the digital-services tax as it currently exists. Real-world DSTs (the
+UK\textquotesingle s two per cent levy, and the French, Italian and
+Spanish equivalents) are scoped narrowly to digital advertising, search
+and online-marketplace revenue, and explicitly exclude cloud computing
+and the sale of AI or software services. The existing DST is therefore
+the closest live analogue for how a recognised-revenue base resists
+relocation, not the base the model is pointing at; reaching the AI rent
+would require extending the scope to AI revenue specifically.} is the
+load-bearing instrument, and the robot tax is a useful complement rather than the
 centrepiece. There is one alternative to taxing the rent rather than
 complementing it, namely competing it away (subsection O): promoting a
 contestable frontier shrinks the rent and so curbs foreign ownership
@@ -2527,6 +2585,24 @@ banks the proceeds in a sovereign equity fund (rather than rebating
 them) does double duty here: it both raises net public saving and
 re-domesticates ownership, which is the combination the full-toolkit
 scenario achieves.
+
+One nuance belongs here, because it is easy to assume that buying the
+ownership back is equivalent to taxing the rent. It is not, and the
+difference is taxing rights. Acquiring the foreign owner\textquotesingle s
+equity in the automated capital does repatriate the after-tax return on
+that capital, which addresses the ownership-drift problem directly. But
+the taxing rights on the AI IP rent itself follow the company\textquotesingle s
+domicile, so the rent is still taxed first abroad, at the owner
+country\textquotesingle s rate, and only the residual after that first
+slice flows home with the equity. A sovereign fund that buys the equity
+therefore re-domesticates the \emph{ownership} of the surplus without
+re-domesticating the \emph{taxing rights} over it; the host concedes the
+first cut to the rent\textquotesingle s home jurisdiction. This is why a
+source levy and an ownership stake are complements rather than
+substitutes: the levy reaches the rent at source where it is recognised
+in the host, while the fund captures the ownership return net of the
+foreign tax. Reaching the rent and owning the capital are two different
+goals, served by two different instruments.
 
 \hypertarget{if-the-rent-rises-every-recommendation-matters-more}{%
 \subsection{If the rent rises, every recommendation matters
@@ -2623,7 +2699,17 @@ expect proportionate retaliation. So the model\textquotesingle s result,
 that a rent-importing host technically can reach the surplus and that
 server relocation does not defeat it, comes with a political price tag
 the model does not carry: using the instrument means accepting the risk
-of trade retaliation.
+of trade retaliation. It is worth saying why this fight may be worth
+having when the earlier digital-tax fights, fought over a couple of
+points of advertising and marketplace revenue, often were not. The AI
+case is higher-stakes on two margins at once: the rent that leaks abroad
+is far larger and compounds into ownership of the capital stock, and the
+wage base that funds the state thins at the same time as the displaced
+roles stop being taxed. The original DST disputes were about a slice of
+revenue; this one is about the ownership of the automated economy and
+the integrity of the fiscal base together, which is why a host has more
+reason to absorb the retaliation here than it did over the first
+generation of digital taxes.
 
 This sharpens the recommendation rather than overturning it, and it
 makes the timing argument concrete. The prize at stake grows as
@@ -2649,9 +2735,17 @@ recommendation for the stated goals is a package rather than a single
 tax: a digital levy on AI value as the centrepiece (reaching the rent),
 a robot tax as a clean complement on the physical channel, an
 onshored-compute policy to widen the transition base and keep
-infrastructure at home, and a behavioural wealth tax to hold inequality
-down, with the proceeds banked in a sovereign fund rather than fully
-rebated. The instruments are complements: in the experiments the full
+infrastructure at home, a behavioural wealth tax to hold inequality
+down, and a commoditisation lever, backing open-weight models and a
+contestable frontier so that no durable monopoly forms in the first
+place, with the proceeds of the levies banked in a sovereign fund rather
+than fully rebated. The commoditisation lever sits a little apart from
+the others, because it works by shrinking the rent rather than capturing
+it (subsection O): it serves the ownership and consumer-price goal and
+provokes no retaliation, but it leaves nothing in the public purse, so
+it complements the levy rather than replacing it, and it is the one lever
+a rent-importing host can pull that a host of the providers would resist,
+since it would be commoditising its own champions. The instruments are complements: in the experiments the full
 toolkit raises the most revenue and holds foreign ownership to about
 half the stock. The one genuine choice the model cannot make is
 distributional: a rebated withholding delivers the lowest inequality but
@@ -2876,6 +2970,26 @@ claims}\label{what-most-bounds-the-headline-claims}}
   parameter-sensitive outcome in the model, swinging on the
   pass-through, so it is reported as a range set by the
   displacement-versus-reinstatement balance rather than a point.
+\item
+  \textbf{The wage result depends on labour scarcity.}
+  \emph{Addressed (experiment R), and a required qualification on a
+  stated result.} The headline model pays each labour type its marginal
+  product in fixed supply, so the task automation cannot reach becomes a
+  scarce complement and its wage rises in level even as the labour share
+  falls. That level claim is not general: it holds \emph{only} because
+  supply is fixed. If the remaining human task is one any worker can do,
+  abundant labour competes the premium away and the surplus accrues to
+  capital instead (experiment R measures this: the routine/cognitive wage
+  premium collapses from about thirty-six to about three and the
+  bottleneck cluster\textquotesingle s labour share falls). If instead it
+  is a genuinely scarce, hard-to-acquire skill, the premium survives but
+  is captured by a narrow wage elite rather than by labour broadly. The
+  reassuring reading of the headline result is therefore the knife-edge
+  case; the two generic outcomes both worsen the distribution, so the
+  caveat sharpens the paper\textquotesingle s conclusion rather than
+  threatening it. What remains is to give labour an explicit
+  participation and skill-heterogeneity margin so the three cases can be
+  weighted rather than bracketed.
 \end{itemize}
 
 \hypertarget{what-would-sharpen-the-results}{%
