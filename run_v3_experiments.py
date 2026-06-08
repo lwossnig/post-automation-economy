@@ -327,6 +327,15 @@ if __name__ == "__main__":
     exp_stability_fig()
     exp_repatriation()
     exp_sensitivity_fig()
+    # Experiments Q, R, S (self-contained scripts that print their own tables and
+    # write their figures to figures_v3/). Run them as part of the v3 batch.
+    log("\n=== Experiment Q: stacked foreign rents (compute vs model) ===")
+    import exp_stacked_rents, exp_labour_supply, exp_endogenous_automation
+    exp_stacked_rents.main()
+    log("\n=== Experiment R: elastic labour supply and the bottleneck wage ===")
+    exp_labour_supply.main()
+    log("\n=== Experiment S: endogenous, cost-driven automation ===")
+    exp_endogenous_automation.main()
     with open(f"{OUT}/results.txt", "w") as f:
         f.write("\n".join(LOG))
     # machine-readable results table for the headline frontier (review wishlist:

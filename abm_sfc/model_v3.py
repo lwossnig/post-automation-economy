@@ -184,6 +184,23 @@ class ParamsV3:
     a_ai_max: float = 0.49         # AI ramp addition (-> 0.99, larger reach)
     a_ai_start: int = 110          # AI ramps later...
     a_ai_speed: float = 0.10       # ...and faster
+    # ---- Experiment S: endogenous, cost-driven automation ----
+    # The logistic ramps above are the TECHNICAL frontier (what can be automated).
+    # With endogenous_automation on, a task is only actually automated when doing it
+    # by machine is cheaper than the human wage for it (MIT "Beyond AI Exposure"): the
+    # realised capital-task share is the logistic increment times a cost gate, a
+    # sigmoid in log(wage / machine-cost). Machine cost starts at auto_cost0_x times
+    # the early per-unit wage and falls at cost_decline_x per period; as it drops below
+    # the wage the gate opens, and rising wages (a bottleneck) open it further (the
+    # feedback). service_scale lets AI cost fall faster as the AI stock grows (scale
+    # economies). Off by default, so every existing experiment is unchanged.
+    endogenous_automation: bool = False
+    auto_cost0_r: float = 3.0      # initial robot cost as a multiple of the early routine wage
+    auto_cost0_ai: float = 3.0     # initial AI cost as a multiple of the early cognitive wage
+    cost_decline_r: float = 0.0    # per-period decline in robot cost
+    cost_decline_ai: float = 0.0   # per-period decline in AI/compute cost
+    automation_cost_elast: float = 8.0   # sharpness of the cost gate (sigmoid in log wage/cost)
+    service_scale: float = 0.0     # AI cost falls with the AI stock (AI-as-a-service economies)
     # ---- Phase 2: reinstatement margin (Acemoglu-Restrepo new tasks) ----
     # Automation raises the capital-task share, but new labour-intensive tasks are
     # created in its wake and pull that share back down. reinstate_frac (rho) is the
@@ -209,6 +226,20 @@ class ParamsV3:
     unemployment_pass_through: float = 0.0
     unemployment_benefit: float = 0.0
     ubi_labour_supply: float = 0.0
+    # ---- Experiment R: elastic labour supply and the bottleneck wage ----
+    # The prior model has FIXED labour supply, so each labour type is paid its
+    # marginal product and automation mechanically raises wages. These elasticities
+    # make the effective labour supplied per cluster respond (on the intensive
+    # margin) to the cluster's per-unit wage relative to a fixed reference, solved by
+    # a short tatonnement against the CES each period. With abundant (elastic) labour
+    # a bottleneck task does NOT command a high wage: supply expands, the wage stays
+    # near the reservation floor, and the surplus accrues to capital. reservation_wage
+    # is the floor as a fraction of the period-0 per-unit wage; below it workers
+    # withdraw. All zero = the fixed-supply model exactly. Setting elast_r high and
+    # elast_c low reproduces labour-market polarisation (a within-labour wage elite).
+    labour_supply_elast_r: float = 0.0   # routine-labour supply elasticity
+    labour_supply_elast_c: float = 0.0   # cognitive-labour supply elasticity
+    reservation_wage: float = 0.0        # wage floor as a fraction of the reference per-unit wage
     # two capital stocks: split of the initial stock and separate depreciation
     robot_capital_share0: float = 0.5   # share of initial K that is robotic (rest AI compute)
     depreciation_r: float = 0.05        # robotic capital depreciation
@@ -241,6 +272,20 @@ class ParamsV3:
     # the AI markup is peeled from the cognitive cluster; it is reached by the same
     # source levy and missed by the hardware robot tax. 0 = robots earn no rent.
     robot_ip: float = 0.0
+    # ---- Experiment Q: a second, stacked foreign rent on the COMPUTE layer ----
+    # The chip/compute layer (accelerator design + ecosystem lock-in, NVIDIA being
+    # the case) earns its own durable, mostly-foreign rent. Unlike the AI IP rent,
+    # which is a recurring licence flow, the compute rent is EMBEDDED IN THE PRICE
+    # of AI capital (paid as part of what the firm pays for compute). We model it as
+    # a wedge peeled from the AI capital income (ci_Kai), mirroring the robot_ip /
+    # mu_frac wedges. The economically important difference is its TAXABILITY: a
+    # withholding/DST sits in the path of a licence flow but NOT a goods price, so
+    # the compute rent escapes dst_ai and tax_repat and is reachable only by a
+    # tariff on imported compute (tariff_compute) or a pass-through usage levy
+    # (usage_levy), or by a domestic chip-maker (compute_foreign = 0). 0 = the
+    # prior model exactly (no compute rent).
+    mu_compute: float = 0.0        # compute rent as a markup share of AI capital income
+    compute_foreign: float = 1.0   # share of the compute rent owned abroad (cf. ai_ip_foreign)
     s_home: float = 1.0            # fraction of AI compute located on home servers
     # ai_ip_foreign is the share of the AI IP (and so of its rent) owned abroad. At 1
     # the rent leaves as a cross-border licence fee and is reachable only by source
@@ -253,6 +298,15 @@ class ParamsV3:
     # differential instruments
     robot_tax: float = 0.0         # source tax on robotic capital income (fully collected)
     dst_ai: float = 0.0            # digital-services levy on AI revenue (rent + AI capital income)
+    # ---- Experiment Q: the two instruments that reach a goods-embedded rent ----
+    # tariff_compute: a border/customs levy on the foreign compute rent (the margin
+    #   embedded in imported compute). The one instrument that catches a capital-good
+    #   price, which the withholding and DST miss. Collected to the government.
+    # usage_levy: a levy on inference/usage, modelled as a charge on AI capital income
+    #   (ci_Kai) that the provider passes through. Reaches PART of the compute rent
+    #   regardless of its form. Both 0 = no border/usage instrument (prior model).
+    tariff_compute: float = 0.0
+    usage_levy: float = 0.0
     # ---- Phase 1a: open-economy goods trade (current account) ----
     # trade_leak (phi) is the fraction of the foreign owner's AFTER-HOST-TAX rent
     # that is repatriated as REAL RESOURCES: the owner consumes domestic output
@@ -336,10 +390,19 @@ class HistoryV3:
     K_ai: list = field(default_factory=list)               # AI compute capital stock
     rent_ai: list = field(default_factory=list)            # AI IP rent (markup) per period
     rent_robot: list = field(default_factory=list)         # embodied-IP rent on robots (default 0)
+    rent_compute: list = field(default_factory=list)       # compute/chip rent on AI capital (Exp Q, default 0)
+    compute_rev: list = field(default_factory=list)        # govt take from tariff + usage levy (Exp Q)
     a_r: list = field(default_factory=list)                # robotic task share
     a_ai: list = field(default_factory=list)               # AI task share
+    cost_robot: list = field(default_factory=list)         # machine cost per routine task (Exp S)
+    cost_ai: list = field(default_factory=list)            # machine cost per cognitive task (Exp S)
     w_Lr: list = field(default_factory=list)               # routine wage bill
     w_Lc: list = field(default_factory=list)               # cognitive wage bill
+    wage_unit_r: list = field(default_factory=list)        # routine per-unit (take-home) wage (Exp R)
+    wage_unit_c: list = field(default_factory=list)        # cognitive per-unit wage (Exp R)
+    labour_supply_r: list = field(default_factory=list)    # effective routine labour supplied (Exp R)
+    labour_supply_c: list = field(default_factory=list)    # effective cognitive labour supplied (Exp R)
+    gini_labour: list = field(default_factory=list)        # within-labour income Gini (Exp R)
     ci_Kr: list = field(default_factory=list)              # robotic capital income
     ci_Kai: list = field(default_factory=list)             # AI capital income
     exports: list = field(default_factory=list)            # rent repatriated as real goods (Phase 1a)
@@ -361,6 +424,18 @@ class ModelV3:
             self.prod4 = NestedProduction(
                 A=p.A, e_top=p.e_top, e_routine=p.e_routine, e_cog=p.e_cog,
                 theta=p.theta_cog)
+        # Experiment R: fixed reference per-unit wages for the elastic-supply curve,
+        # set lazily on the first step (None until then).
+        self._w_ref_r = None
+        self._w_ref_c = None
+        self._sf_r = self._sf_c = 1.0
+        # Experiment S: lagged per-unit wages (for the cost comparison) and the
+        # reference wage / AI-stock anchors for the machine-cost path. Set lazily.
+        self._wu_r_prev = None
+        self._wu_c_prev = None
+        self._cost_ref_r = None
+        self._cost_ref_c = None
+        self._kai_ref = None
 
         # --- labour endowment: per-agent skill (efficiency units) and employment ---
         if p.skill_dispersion > 0:
@@ -441,15 +516,41 @@ class ModelV3:
         z = speed * (self.t - start)
         return min(max(base + mx / (1.0 + np.exp(-z)), base), 0.999)
 
+    def _cost_gate(self, wage_prev, cost_ref, cost0, decline, scale_factor):
+        """Experiment S: the fraction of the technical frontier that is cost-effective.
+
+        Machine cost is cost0 * (early per-unit wage) * (1 - decline)**t, optionally
+        scaled down by scale_factor. The gate is a sigmoid in log(wage / cost): >0.5
+        once the wage exceeds the machine cost. Returns 1.0 (the plain logistic) until
+        a reference wage has been observed, so period 0 is unaffected.
+        """
+        p = self.p
+        if wage_prev is None or cost_ref is None:
+            return 1.0
+        cost = cost0 * cost_ref * (1.0 - decline) ** self.t * scale_factor
+        z = p.automation_cost_elast * np.log(max(wage_prev, 1e-9) / max(cost, 1e-12))
+        return float(1.0 / (1.0 + np.exp(-np.clip(z, -50.0, 50.0))))
+
     def a_r_t(self) -> float:
         """Robotic capital-task share inside the routine cluster."""
         p = self.p
-        return self._logistic_ramp(p.a_r_base, p.a_r_max, p.a_r_start, p.a_r_speed)
+        ramp = self._logistic_ramp(p.a_r_base, p.a_r_max, p.a_r_start, p.a_r_speed)
+        if not p.endogenous_automation:
+            return ramp
+        gate = self._cost_gate(self._wu_r_prev, self._cost_ref_r, p.auto_cost0_r, p.cost_decline_r, 1.0)
+        return min(max(p.a_r_base + (ramp - p.a_r_base) * gate, p.a_r_base), 0.999)
 
     def a_ai_t(self) -> float:
         """AI capital-task share inside the cognitive cluster."""
         p = self.p
-        return self._logistic_ramp(p.a_ai_base, p.a_ai_max, p.a_ai_start, p.a_ai_speed)
+        ramp = self._logistic_ramp(p.a_ai_base, p.a_ai_max, p.a_ai_start, p.a_ai_speed)
+        if not p.endogenous_automation:
+            return ramp
+        scale = 1.0
+        if p.service_scale > 0.0 and self._kai_ref:
+            scale = (self._kai_ref / max(self.K_ai, 1e-9)) ** p.service_scale
+        gate = self._cost_gate(self._wu_c_prev, self._cost_ref_c, p.auto_cost0_ai, p.cost_decline_ai, scale)
+        return min(max(p.a_ai_base + (ramp - p.a_ai_base) * gate, p.a_ai_base), 0.999)
 
     def _reinstate_share(self) -> float:
         """Phase 2: the fraction of competitive capital income reinstated to labour
@@ -460,6 +561,40 @@ class ModelV3:
             return 0.0
         z = p.a_ai_speed * (self.t - p.a_ai_start - p.reinstate_lag)
         return float(p.reinstate_frac / (1.0 + np.exp(-z)))
+
+    def _elastic_labour(self, Lr0, Lc0, a_r, a_ai):
+        """Experiment R: solve the effective labour supplied per cluster.
+
+        Each cluster's labour supply slopes up in its per-unit wage relative to a
+        fixed period-0 reference, floored at the reservation wage. The per-unit wage
+        is the marginal product (the cluster wage bill / labour), so wage and quantity
+        are jointly determined; we solve the fixed point by a short damped tatonnement
+        against the CES. Returns (L_r, L_c, supply_factor_r, supply_factor_c). With
+        both elasticities zero this returns the fixed pools unchanged.
+        """
+        p = self.p
+        er, ec = p.labour_supply_elast_r, p.labour_supply_elast_c
+        if er <= 0.0 and ec <= 0.0:
+            return Lr0, Lc0, 1.0, 1.0
+        # fixed reference per-unit wages, set once at the first call (period 0)
+        if self._w_ref_r is None:
+            d0 = self._decompose(self.K_r, self.K_ai, Lr0, Lc0, a_r, a_ai)
+            self._w_ref_r = max(d0["w_Lr"] / max(Lr0, 1e-9), 1e-9)
+            self._w_ref_c = max(d0["w_Lc"] / max(Lc0, 1e-9), 1e-9)
+        res_r = p.reservation_wage * self._w_ref_r
+        res_c = p.reservation_wage * self._w_ref_c
+        Lr, Lc, damp = Lr0, Lc0, 0.5
+        for _ in range(8):
+            d = self._decompose(self.K_r, self.K_ai, Lr, Lc, a_r, a_ai)
+            wur = d["w_Lr"] / max(Lr, 1e-9)        # routine per-unit (demand) wage
+            wuc = d["w_Lc"] / max(Lc, 1e-9)        # cognitive per-unit wage
+            tgt_r = Lr0 * (max(wur, res_r) / self._w_ref_r) ** er if er > 0.0 else Lr0
+            tgt_c = Lc0 * (max(wuc, res_c) / self._w_ref_c) ** ec if ec > 0.0 else Lc0
+            tgt_r = float(np.clip(tgt_r, 0.2 * Lr0, 6.0 * Lr0))
+            tgt_c = float(np.clip(tgt_c, 0.2 * Lc0, 6.0 * Lc0))
+            Lr = (1.0 - damp) * Lr + damp * tgt_r
+            Lc = (1.0 - damp) * Lc + damp * tgt_c
+        return Lr, Lc, Lr / max(Lr0, 1e-9), Lc / max(Lc0, 1e-9)
 
     def _employment(self, a_r, a_ai):
         """Phase 2 (piece 2): turn part of the labour-share fall into unemployment.
@@ -608,6 +743,11 @@ class ModelV3:
             L_r = max(float(eff[~self.cognitive].sum()), 1e-6)   # routine labour pool
             L_c = max(float(eff[self.cognitive].sum()), 1e-6)    # cognitive labour pool
             a_r, a_ai = self.a_r_t(), self.a_ai_t()
+            # Experiment R: let the effective labour pools respond to the per-unit wage
+            # (intensive margin), solved against the CES. With elasticities zero this
+            # leaves L_r, L_c unchanged. The wage bill is still distributed over the raw
+            # employed labour below, so an expanded supply lowers the per-unit wage.
+            L_r, L_c, self._sf_r, self._sf_c = self._elastic_labour(L_r, L_c, a_r, a_ai)
             # Phase 2 (piece 2): employment overlay. Production keeps the full labour
             # pools L_r, L_c above; emp_status only governs who EARNS the wage bill.
             self.emp_status = self._employment(a_r, a_ai)
@@ -828,7 +968,15 @@ class ModelV3:
             rent_ai = self._mu_eff * d2["s_c"] * Y
             rent_robot = self._mu_robot * d2["s_r"] * Y
             ci_Kr = d2["ci_Kr"] * (1.0 - self._mu_robot) * sc
-            ci_Kai = d2["ci_Kai"] * (1.0 - self._mu_eff) * sc
+            ci_Kai_comp = d2["ci_Kai"] * (1.0 - self._mu_eff) * sc   # AI capital income net of the IP rent
+            # Experiment Q: the compute/chip rent is a wedge on the AI capital income
+            # (the foreign chip-maker's margin embedded in the price of compute).
+            # Peeled here so capital_income excludes it, exactly like the IP rent; it
+            # leaves to the rest of the world in section 8, but reached by neither the
+            # DST nor the withholding (it is a goods price, not a licence flow).
+            self._mu_compute = float(np.clip(p.mu_compute, 0.0, 0.9))
+            rent_compute = self._mu_compute * np.clip(ci_Kai_comp, 0.0, None)
+            ci_Kai = ci_Kai_comp - rent_compute
             w_Lr = d2["w_Lr"] * (1.0 - self._mu_robot) * sc
             w_Lc = d2["w_Lc"] * (1.0 - self._mu_eff) * sc
             wage_bill = w_Lr + w_Lc
@@ -847,6 +995,8 @@ class ModelV3:
             wage_i = (wage_bill / L) * self.skill * self.employed
             rent_ai = 0.0
             rent_robot = 0.0
+            rent_compute = 0.0
+            self._mu_compute = 0.0
             ci_Kr = ci_Kai = 0.0
 
             net_profit = capital_income - dep_flow
@@ -862,7 +1012,12 @@ class ModelV3:
             # (what the DST and withholding reach); the domestic share stays home as
             # capital income to resident owners (reached instead by domestic taxes).
             self._royalty_foreign = p.ai_ip_foreign * rent_total
-            self._rent_dom = rent_total - self._royalty_foreign
+            # Experiment Q: the compute rent splits by chip-maker domicile. The
+            # foreign part leaves abroad (section 8) but is invisible to the DST and
+            # the withholding; the domestic part (a home chip-maker) stays as resident
+            # capital income alongside the domestic IP rent.
+            self._compute_foreign = p.compute_foreign * rent_compute
+            self._rent_dom = (rent_total - self._royalty_foreign) + (rent_compute - self._compute_foreign)
             # Phase 3: the optimising owner shifts a share of the rent recognition
             # offshore when the host taxes it, escaping the DST and the withholding.
             self._rent_shift = 0.0
@@ -877,9 +1032,22 @@ class ModelV3:
             self._dst_rent = p.dst_ai * np.clip(self._royalty_foreign, 0, None) * (1.0 - self._rent_shift)  # on recognised foreign rent
             corp_tax = ord_corp + robot_tax_amt + dst_cap                 # taxes from firm surplus
             after_tax = net_profit - corp_tax
+            # Experiment Q: the two instruments that reach a goods-embedded rent. The
+            # tariff catches the foreign compute rent at the border (a customs charge
+            # on imported compute); the usage levy taxes the compute bill (AI capital
+            # income gross of the embedded rent) and so catches PART of that rent. Both
+            # are collected by the host without reducing the foreign owner's price; the
+            # DST and withholding above never touch them.
+            self._tariff_rev = p.tariff_compute * np.clip(self._compute_foreign, 0.0, None)
+            self._usage_rev = p.usage_levy * np.clip(ci_Kai + rent_compute, 0.0, None)
+            self._compute_rev = self._tariff_rev + self._usage_rev
         else:
             self._dst_rent = 0.0
             self._rent_shift = 0.0
+            self._compute_foreign = 0.0
+            self._tariff_rev = 0.0
+            self._usage_rev = 0.0
+            self._compute_rev = 0.0
             # Profit shifting by foreign-operated automation: a fraction profit_shift
             # of the economic profit on the foreign-operated share of the capital is
             # relocated abroad as a deductible royalty/IP charge, recognised in the
@@ -959,13 +1127,17 @@ class ModelV3:
         house_flow = (wage_i + int_house + ubi_i + fund_rebate + div_house + rent_dom_i
                       + repat_rebate_i + benefit_i - consumption - income_tax - wt_cash)
         gov_flow = (corp_tax + income_tax.sum() + wt_cash.sum() + div_state
-                    + int_gov + repat_cash + self._dst_rent - repat_rebate_i.sum()
+                    + int_gov + repat_cash + self._dst_rent + self._compute_rev - repat_rebate_i.sum()
                     - ubi_total - G - fund_rebate.sum() - benefit_i.sum())
-        row_flow = div_row + int_row + self._royalty_foreign - repat_cash - self._dst_rent - self._X_row
+        # The foreign compute rent leaves abroad net of the border tariff; the usage
+        # levy is borne by the firm (paid out of the compute bill, like the rent).
+        row_flow = (div_row + int_row + self._royalty_foreign + self._compute_foreign
+                    - repat_cash - self._dst_rent - self._tariff_rev - self._X_row)
         self.h_dep += house_flow
         self.gov_dep += gov_flow
         self.row_dep += row_flow
-        self.firm_dep += (C + G + self._X_row) - wage_bill - corp_tax - dividends_tot - royalty + int_firm
+        self.firm_dep += ((C + G + self._X_row) - wage_bill - corp_tax - dividends_tot
+                          - royalty - rent_compute - self._usage_rev + int_firm)
 
         # government balance (diagnostic): revenue + interest - outlays
         gov_balance = (corp_tax + income_tax.sum() + wt_cash.sum() + div_state
@@ -1228,10 +1400,33 @@ class ModelV3:
             self.hist.K_ai.append(float(self.K_ai))
             self.hist.rent_ai.append(float(rent_ai))
             self.hist.rent_robot.append(float(rent_robot))
+            self.hist.rent_compute.append(float(rent_compute))
+            self.hist.compute_rev.append(float(self._compute_rev))
             self.hist.a_r.append(float(a_r))
             self.hist.a_ai.append(float(a_ai))
+            if p.endogenous_automation and self._cost_ref_r is not None:
+                self.hist.cost_robot.append(float(p.auto_cost0_r * self._cost_ref_r
+                                                  * (1.0 - p.cost_decline_r) ** self.t))
+                self.hist.cost_ai.append(float(p.auto_cost0_ai * self._cost_ref_c
+                                               * (1.0 - p.cost_decline_ai) ** self.t))
+            else:
+                self.hist.cost_robot.append(0.0)
+                self.hist.cost_ai.append(0.0)
             self.hist.w_Lr.append(float(w_Lr))
             self.hist.w_Lc.append(float(w_Lc))
+            _wu_r = float(w_Lr / max(L_r, 1e-9))
+            _wu_c = float(w_Lc / max(L_c, 1e-9))
+            self.hist.wage_unit_r.append(_wu_r)
+            self.hist.wage_unit_c.append(_wu_c)
+            # Experiment S: carry this period's per-unit wages to the next step's cost
+            # comparison, and anchor the machine-cost path to the first wage observed.
+            if self._cost_ref_r is None:
+                self._cost_ref_r, self._cost_ref_c, self._kai_ref = _wu_r, _wu_c, float(self.K_ai)
+            self._wu_r_prev, self._wu_c_prev = _wu_r, _wu_c
+            self.hist.labour_supply_r.append(float(L_r))
+            self.hist.labour_supply_c.append(float(L_c))
+            emp_mask = self.emp_status > 0.0
+            self.hist.gini_labour.append(float(gini(wage_i[emp_mask])) if emp_mask.sum() > 1 else 0.0)
             self.hist.ci_Kr.append(float(ci_Kr))
             self.hist.ci_Kai.append(float(ci_Kai))
             self.hist.exports.append(float(self._X_row))

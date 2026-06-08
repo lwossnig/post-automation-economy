@@ -17,6 +17,13 @@ CONFIGS = [
     dict(own_households=0.4, own_state=0.6, citizens_fund=True),
     dict(wealth_brackets=((2.0, 0.01), (10.0, 0.03)), ubi=0.3),
     dict(skill_dispersion=0.6, displacement=True, ubi=0.3),
+    dict(two_channel=True, mu_frac=0.25, mu_compute=0.15, tariff_compute=0.30,
+         usage_levy=0.10, skill_dispersion=0.4, ubi=0.3),   # Exp Q: stacked rents + levers
+    dict(two_channel=True, mu_frac=0.25, labour_supply_elast_r=0.3,
+         reservation_wage=0.5, skill_dispersion=0.4, ubi=0.3),   # Exp R: elastic labour
+    dict(two_channel=True, mu_frac=0.25, endogenous_automation=True,
+         auto_cost0_ai=8.0, auto_cost0_r=8.0, cost_decline_ai=0.008,
+         cost_decline_r=0.008, skill_dispersion=0.4, ubi=0.3),   # Exp S: endogenous automation
 ]
 
 
@@ -754,3 +761,115 @@ def test_robot_ip_rent_source_levy_reaches_hardware_tax_misses():
     # the source levy pulls foreign ownership down materially; the hardware robot tax barely moves it
     assert fo_levy < fo_u - 0.10
     assert abs(fo_robot - fo_u) < abs(fo_levy - fo_u)
+
+
+# ---- Experiment Q: two stacked foreign rents (compute vs model) ----
+
+def test_compute_rent_accelerates_ownership_drift():
+    """A second, foreign compute rent stacked on the IP rent raises the mature
+    foreign-ownership share above the IP-rent-only baseline."""
+    T = 400
+    base = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); base.run()
+    stk = ModelV3(_replace(_sv3.stacked_rents_importer(), n_agents=300, periods=T, seed=0)); stk.run()
+    assert np.array(stk.hist.rent_compute)[-50:].mean() > 0.0      # compute rent is positive
+    assert np.array(base.hist.rent_compute)[-50:].mean() == 0.0    # zero in the baseline
+    assert _foreign_own(stk) > _foreign_own(base) + 0.02
+    assert abs(stk.deposits_sum()) < 1e-3
+    assert abs(stk.total_nw() - stk.real_assets()) < 1e-3
+
+
+def test_dst_and_withholding_miss_the_compute_rent():
+    """The licence-flow instruments (DST, withholding) collect NOTHING from the
+    compute rent, while the tariff and the usage levy do. The compute-rent take is
+    recorded in hist.compute_rev."""
+    T = 400
+    def take(make):
+        m = ModelV3(_replace(make(), n_agents=300, periods=T, seed=0)); m.run()
+        return np.array(m.hist.compute_rev)[100:].sum()
+    imp = take(_sv3.stacked_rents_importer)
+    dst = take(lambda: _replace(_sv3.stacked_rents_importer(), dst_ai=0.10))
+    wht = take(lambda: _replace(_sv3.stacked_rents_importer(), tax_repat=0.30, repat_rebate=True))
+    tar = take(_sv3.stacked_rents_tariff)
+    use = take(_sv3.stacked_rents_usage)
+    assert imp == 0.0 and dst == 0.0 and wht == 0.0   # none of these reach it
+    assert tar > 0.0 and use > 0.0                     # the border/usage levers do
+
+
+def test_domestic_chipmaker_keeps_the_compute_rent_home():
+    """Moving the chip-maker's domicile home (compute_foreign=0) keeps the rent and
+    lowers foreign ownership relative to the importer; onshoring servers (s_home)
+    does not."""
+    T = 400
+    imp = ModelV3(_replace(_sv3.stacked_rents_importer(), n_agents=300, periods=T, seed=0)); imp.run()
+    home = ModelV3(_replace(_sv3.stacked_rents_us_chips(), n_agents=300, periods=T, seed=0)); home.run()
+    off = ModelV3(_replace(_sv3.stacked_rents_offshore(), n_agents=300, periods=T, seed=0)); off.run()
+    assert _foreign_own(home) < _foreign_own(imp) - 0.05      # home chips keep the rent
+    assert abs(_foreign_own(off) - _foreign_own(imp)) < 0.02  # s_home is inert for it
+
+
+# ---- Experiment R: elastic labour supply and the bottleneck wage ----
+
+def _two_ch_steady(m):
+    """Steady-state cluster aggregates for a finished two-channel run."""
+    W = slice(250, m.p.periods)
+    wLr = np.array(m.hist.w_Lr)[W].sum(); ciKr = np.array(m.hist.ci_Kr)[W].sum()
+    wuR = float(np.mean(m.hist.wage_unit_r[-50:]))
+    wuC = float(np.mean(m.hist.wage_unit_c[-50:]))
+    return dict(routine_labshare=wLr / (wLr + ciKr), wuR=wuR, ratio=wuR / max(wuC, 1e-9))
+
+
+def test_elastic_supply_is_inert_at_zero():
+    """Regression guard: zero elasticities reproduce the fixed-supply model exactly."""
+    T = 300
+    base = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); base.run()
+    inel = ModelV3(_replace(_sv3.labour_inelastic(), n_agents=300, periods=T, seed=0)); inel.run()
+    assert inel._sf_r == 1.0 and inel._sf_c == 1.0
+    assert np.allclose(np.array(base.hist.w_Lr), np.array(inel.hist.w_Lr))
+    assert np.allclose(np.array(base.hist.wage_unit_r), np.array(inel.hist.wage_unit_r))
+
+
+def test_elastic_supply_dampens_the_bottleneck_wage():
+    """The bottleneck (routine) per-unit wage spike and the routine/cognitive
+    scarcity premium are both competed down once supply is elastic, and within the
+    bottleneck cluster the surplus shifts toward capital (labour share falls)."""
+    T = 400
+    inel = ModelV3(_replace(_sv3.labour_inelastic(), n_agents=300, periods=T, seed=0)); inel.run()
+    elas = ModelV3(_replace(_sv3.labour_elastic_strong(), n_agents=300, periods=T, seed=0)); elas.run()
+    i, e = _two_ch_steady(inel), _two_ch_steady(elas)
+    assert e["wuR"] < i["wuR"]                       # bottleneck wage dampened
+    assert e["ratio"] < i["ratio"]                    # scarcity premium collapses
+    assert e["routine_labshare"] < i["routine_labshare"]   # cluster surplus to capital
+    assert elas._sf_r > 1.0                           # labour did expand
+    assert abs(elas.deposits_sum()) < 1e-3
+    assert abs(elas.total_nw() - elas.real_assets()) < 1e-3
+
+
+# ---- Experiment S: endogenous, cost-driven automation ----
+
+def test_endogenous_automation_is_inert_when_cost_is_negligible():
+    """With the flag off the ramp is exogenous; with the flag on but machine cost far
+    below the wage the gate is fully open, so the realised ramp matches the frontier."""
+    T = 300
+    exo = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); exo.run()
+    cheap = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0,
+                             endogenous_automation=True, auto_cost0_ai=1e-3, auto_cost0_r=1e-3,
+                             cost_decline_ai=0.0, cost_decline_r=0.0)); cheap.run()
+    assert np.allclose(np.array(exo.hist.a_ai), np.array(cheap.hist.a_ai), atol=1e-3)
+
+
+def test_cost_decline_speed_sets_the_pace_and_transition_still_arrives():
+    """Slower cost decline => later, lower realised automation than faster decline and
+    than the exogenous frontier; but the transition still arrives by the end."""
+    T = 600
+    exo = ModelV3(_replace(_sv3.two_channel_base(), n_agents=300, periods=T, seed=0)); exo.run()
+    slow = ModelV3(_replace(_sv3.endog_auto_slow(), n_agents=300, periods=T, seed=0)); slow.run()
+    mit = ModelV3(_replace(_sv3.endog_auto_mit(), n_agents=300, periods=T, seed=0)); mit.run()
+    fast = ModelV3(_replace(_sv3.endog_auto_fast(), n_agents=300, periods=T, seed=0)); fast.run()
+    a_slow, a_mit, a_fast = (np.array(m.hist.a_ai) for m in (slow, mit, fast))
+    # at mid-transition the realised share is ordered by cost-decline speed
+    assert a_slow[250] < a_mit[250] < a_fast[250]
+    assert a_slow[250] < np.array(exo.hist.a_ai)[250]      # endogenous lags the frontier
+    # but it is "how fast", not "whether": slow automation still arrives by the end
+    assert a_slow[-1] > 0.9
+    assert abs(slow.deposits_sum()) < 1e-3
+    assert abs(slow.total_nw() - slow.real_assets()) < 1e-3

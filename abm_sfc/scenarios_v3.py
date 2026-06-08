@@ -233,3 +233,125 @@ def rising_rent_both():
 def robot_ip_rent():
     """Robots carry an IP rent of the same order as the AI markup (0.25)."""
     return replace(TWO_CH, robot_ip=0.25)
+
+
+# --- Experiment Q: two stacked foreign rents (compute vs model) --------------
+# A second durable rent sits on the COMPUTE layer (chip design + ecosystem lock-in),
+# embedded in the price of AI capital rather than flowing as a licence fee. The base
+# case adds it on top of the foreign IP rent (the pure importer); variants move its
+# domicile home or reach for it with the two new instruments. mu_compute = 0.15 is a
+# compute markup of the same order as a fraction of the AI markup.
+def stacked_rents_importer():
+    """Both rents foreign: a compute/chip rent stacked on the foreign IP rent."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0)
+
+
+def stacked_rents_us_chips():
+    """Compute rent domestic (a home chip-maker), IP rent still foreign."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=0.0)
+
+
+def stacked_rents_full_owner():
+    """Both rents domestic: the full owner (compute and model at home)."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=0.0, ai_ip_foreign=0.0)
+
+
+def stacked_rents_tariff():
+    """Pure importer plus a border tariff on the imported compute rent."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0, tariff_compute=0.30)
+
+
+def stacked_rents_usage():
+    """Pure importer plus a usage levy on the compute bill (partial reach)."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0, usage_levy=0.10)
+
+
+def stacked_rents_offshore():
+    """Pure importer with compute offshored: onshoring (s_home) does NOT reach it."""
+    return replace(TWO_CH, mu_compute=0.15, compute_foreign=1.0, s_home=0.20)
+
+
+REGISTRY.update({
+    "stacked_rents_importer": stacked_rents_importer,
+    "stacked_rents_us_chips": stacked_rents_us_chips,
+    "stacked_rents_full_owner": stacked_rents_full_owner,
+    "stacked_rents_tariff": stacked_rents_tariff,
+    "stacked_rents_usage": stacked_rents_usage,
+    "stacked_rents_offshore": stacked_rents_offshore,
+})
+
+
+# --- Experiment R: elastic labour supply and the bottleneck wage -------------
+# The baseline pays each labour type its marginal product with FIXED supply, so the
+# task AI cannot do (the physical/routine bottleneck) becomes a scarce complement to
+# robotic capital and its per-unit wage explodes: the model's "automation raises
+# wages" result. labour_inelastic is that baseline. The elastic scenarios make the
+# bottleneck labour abundant (an upward-sloping supply with a reservation floor), so
+# the scarcity premium is competed away: the bottleneck wage is dampened, the
+# wuR/wuC premium collapses, and within the bottleneck cluster the surplus shifts to
+# capital. Elasticities are kept in the range where the fixed point converges below
+# the supply safety band. (At the aggregate the labour share need not fall, because
+# the labour-intensive bottleneck cluster expands; the clean result is the bottleneck
+# WAGE, not the economy-wide share.)
+def labour_inelastic():
+    """Fixed labour supply (the current model); the sanity anchor."""
+    return replace(TWO_CH)
+
+
+def labour_elastic_routine():
+    """Abundant, elastic routine (bottleneck) labour with a reservation floor."""
+    return replace(TWO_CH, labour_supply_elast_r=0.2, reservation_wage=0.5)
+
+
+def labour_elastic_strong():
+    """A stronger supply response: the bottleneck premium is competed away further."""
+    return replace(TWO_CH, labour_supply_elast_r=0.3, reservation_wage=0.5)
+
+
+REGISTRY.update({
+    "labour_inelastic": labour_inelastic,
+    "labour_elastic_routine": labour_elastic_routine,
+    "labour_elastic_strong": labour_elastic_strong,
+})
+
+
+# --- Experiment S: endogenous, cost-driven automation ------------------------
+# The logistic ramp is the technical frontier; here a task is automated only when
+# the machine is cheaper than the human wage for it. Machine cost starts well above
+# the early wage (auto_cost0 = 8x) and declines at cost_decline per period, so the
+# realised automation lags the frontier and its pace is set by how fast cost falls.
+# Slow decline => a late, long-partial transition; faster decline => closer to the
+# exogenous ramp; AI-as-a-service scale economies pull it forward. The transition
+# still arrives (the wage feedback opens the gate as bottleneck wages rise), so the
+# result is "how fast and how far," not "whether."
+def endog_auto_slow():
+    """Slow cost decline: automation is delayed and partial for a long time."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=8.0, auto_cost0_ai=8.0, cost_decline_r=0.004, cost_decline_ai=0.004)
+
+
+def endog_auto_mit():
+    """MIT-baseline pace: a gradual, cost-paced transition."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=8.0, auto_cost0_ai=8.0, cost_decline_r=0.008, cost_decline_ai=0.008)
+
+
+def endog_auto_fast():
+    """Fast cost decline: automation arrives close to the exogenous frontier timing."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=4.0, auto_cost0_ai=4.0, cost_decline_r=0.012, cost_decline_ai=0.012)
+
+
+def endog_auto_scale():
+    """MIT pace plus AI-as-a-service scale economies (cost falls with the AI stock)."""
+    return replace(TWO_CH, endogenous_automation=True, automation_cost_elast=2.5,
+                   auto_cost0_r=8.0, auto_cost0_ai=8.0, cost_decline_r=0.008, cost_decline_ai=0.008,
+                   service_scale=0.5)
+
+
+REGISTRY.update({
+    "endog_auto_slow": endog_auto_slow,
+    "endog_auto_mit": endog_auto_mit,
+    "endog_auto_fast": endog_auto_fast,
+    "endog_auto_scale": endog_auto_scale,
+})
